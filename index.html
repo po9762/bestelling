@@ -188,6 +188,12 @@
     const resetKnop = document.getElementById("reset");
     const totaalAantal = document.getElementById("totaalAantal");
 
+function updateKnopTekst() {
+toggleKnop.textContent = bonModus
+? "Bestel"
+: "Bon";
+}
+
     /*
      * Maak voor elke drank een beginwaarde van 0.
      */
@@ -371,17 +377,18 @@
     /*
      * Wissel tussen bestellijst en bon.
      */
-    function toggleWeergave() {
-      bonModus = !bonModus;
 
-      if (bonModus) {
-        toggleKnop.textContent = "Bestel";
-        renderBon();
-      } else {
-        toggleKnop.textContent = "Bon";
-        renderBestellijst();
-      }
-    }
+function toggleWeergave() {
+bonModus = !bonModus;
+ 
+updateKnopTekst();
+ 
+if (bonModus) {
+renderBon();
+} else {
+renderBestellijst();
+}
+}
 
     /*
      * Zet alle aantallen terug op nul.
@@ -391,8 +398,8 @@
         aantallen[id] = 0;
       });
 
-      bonModus = false;
-      toggleKnop.textContent = "Bon";
+bonModus = false;
+updateKnopTekst();
 
       updateTotaal();
       renderBestellijst();

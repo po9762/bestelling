@@ -3,12 +3,17 @@
 <head>
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icon-192.png">
+
   <meta charset="UTF-8">
+
   <title>Drankbestelling</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
 
   <style>
-
     :root {
       --blokbreedte: 400px;
     }
@@ -25,12 +30,12 @@
       margin-bottom: 15px;
     }
 
-.top-balk,
-.drank-blok,
-.toggle-knop {
-  width: min(100%, var(--blokbreedte));
-  box-sizing: border-box;
-}
+    .top-balk,
+    .drank-blok,
+    .toggle-knop {
+      width: min(100%, var(--blokbreedte));
+      box-sizing: border-box;
+    }
 
     .top-balk {
       display: flex;
@@ -38,7 +43,7 @@
       align-items: center;
       background: #fff;
       border-radius: 12px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
       padding: 20px;
       margin-bottom: 15px;
       font-size: 18px;
@@ -56,7 +61,7 @@
       cursor: pointer;
       font-size: 16px;
       font-weight: bold;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
     }
 
     .toggle-knop:hover {
@@ -66,7 +71,7 @@
     .drank-blok {
       background: #fff;
       border-radius: 12px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
       padding: 20px;
       margin-bottom: 20px;
     }
@@ -75,10 +80,11 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
+      gap: 15px;
       margin: 10px 0;
     }
 
-    .drank span:first-child {
+    .drank-naam {
       flex: 1;
     }
 
@@ -89,7 +95,7 @@
     }
 
     button {
-      background-color: #007BFF;
+      background-color: #007bff;
       color: white;
       border: none;
       border-radius: 6px;
@@ -116,25 +122,48 @@
       background-color: #b02a37;
     }
 
+    /* Opmaak van de bon */
+    .bon-rij {
+      padding: 8px 0;
+      border-bottom: 1px solid #eeeeee;
+    }
+
+    .bon-rij:last-child {
+      border-bottom: none;
+    }
+
+    .bon-aantal {
+      min-width: 40px;
+      text-align: right;
+      font-weight: bold;
+    }
+
+    .lege-bon {
+      color: #666;
+      font-style: italic;
+      margin: 0;
+    }
   </style>
 </head>
 
 <body>
-
   <div class="top-balk">
     <div>
       Totaal aantal drankjes:
       <span id="totaalAantal">0</span>
     </div>
 
-    <button id="reset" onclick="resetAlles()">Reset</button>
+    <button id="reset" type="button">
+      Reset
+    </button>
   </div>
 
   <button
     id="toggleKnop"
     class="toggle-knop"
-    onclick="toggleNulregels()">
-    Verberg 0-lijnen
+    type="button"
+  >
+    Bon
   </button>
 
   <div id="drankenContainer"></div>
@@ -142,158 +171,245 @@
   <script src="dranken.js"></script>
 
   <script>
+    /*
+     * De aantallen worden hier bewaard.
+     * De HTML-weergave is daardoor niet langer de gegevensbron.
+     */
+    const aantallen = {};
 
-    let verbergNulregels = false;
+    /*
+     * false = bestellijst
+     * true  = bon
+     */
+    let bonModus = false;
 
-    function renderDranken() {
+    const container = document.getElementById("drankenContainer");
+    const toggleKnop = document.getElementById("toggleKnop");
+    const resetKnop = document.getElementById("reset");
+    const totaalAantal = document.getElementById("totaalAantal");
 
-      const container = document.getElementById("drankenContainer");
+    /*
+     * Maak voor elke drank een beginwaarde van 0.
+     */
+    function initialiseerAantallen() {
+      drankData.forEach(categorie => {
+        categorie.dranken.forEach(drank => {
+          aantallen[drank.id] = 0;
+        });
+      });
+    }
+
+    /*
+     * Toon de gewone bestellijst:
+     * categorieën, dranknamen, min- en plusknoppen.
+     */
+    function renderBestellijst() {
       container.innerHTML = "";
 
       drankData.forEach(categorie => {
-
         const blok = document.createElement("div");
         blok.className = "drank-blok";
-        blok.id = categorie.id;
 
         const titel = document.createElement("h2");
         titel.textContent = categorie.naam;
         blok.appendChild(titel);
 
         categorie.dranken.forEach(drank => {
-
           const rij = document.createElement("div");
           rij.className = "drank";
 
           const naam = document.createElement("span");
+          naam.className = "drank-naam";
           naam.textContent = drank.naam;
 
           const bediening = document.createElement("div");
           bediening.className = "bediening";
 
-          const min = document.createElement("button");
-          min.textContent = "-";
-          min.addEventListener("click", () => verlaag(drank.id));
+          const minKnop = document.createElement("button");
+          minKnop.type = "button";
+          minKnop.textContent = "-";
+          minKnop.setAttribute(
+            "aria-label",
+            "Verminder " + drank.naam
+          );
+
+          minKnop.addEventListener("click", () => {
+            verlaag(drank.id);
+          });
 
           const aantal = document.createElement("span");
-          aantal.id = drank.id;
           aantal.className = "aantal";
-          aantal.textContent = "0";
+          aantal.id = "aantal-" + drank.id;
+          aantal.textContent = aantallen[drank.id];
 
-          const plus = document.createElement("button");
-          plus.textContent = "+";
-          plus.addEventListener("click", () => verhoog(drank.id));
+          const plusKnop = document.createElement("button");
+          plusKnop.type = "button";
+          plusKnop.textContent = "+";
+          plusKnop.setAttribute(
+            "aria-label",
+            "Verhoog " + drank.naam
+          );
 
-          bediening.append(min, aantal, plus);
-          rij.append(naam, bediening);
+          plusKnop.addEventListener("click", () => {
+            verhoog(drank.id);
+          });
+
+          bediening.appendChild(minKnop);
+          bediening.appendChild(aantal);
+          bediening.appendChild(plusKnop);
+
+          rij.appendChild(naam);
+          rij.appendChild(bediening);
 
           blok.appendChild(rij);
         });
 
         container.appendChild(blok);
       });
-
     }
 
+    /*
+     * Toon de bon:
+     * alle gekozen dranken in één blok,
+     * zonder categorieën en zonder knoppen.
+     */
+    function renderBon() {
+      container.innerHTML = "";
+
+      const bonBlok = document.createElement("div");
+      bonBlok.className = "drank-blok";
+
+      let heeftDranken = false;
+
+      drankData.forEach(categorie => {
+        categorie.dranken.forEach(drank => {
+          const aantal = aantallen[drank.id];
+
+          if (aantal > 0) {
+            heeftDranken = true;
+
+            const rij = document.createElement("div");
+            rij.className = "drank bon-rij";
+
+            const naam = document.createElement("span");
+            naam.className = "drank-naam";
+            naam.textContent = drank.naam;
+
+            const aantalElement = document.createElement("span");
+            aantalElement.className = "bon-aantal";
+            aantalElement.textContent = aantal;
+
+            rij.appendChild(naam);
+            rij.appendChild(aantalElement);
+
+            bonBlok.appendChild(rij);
+          }
+        });
+      });
+
+      /*
+       * Als nog niets geselecteerd is, toon dan een melding
+       * in plaats van een leeg wit blok.
+       */
+      if (!heeftDranken) {
+        const melding = document.createElement("p");
+        melding.className = "lege-bon";
+        melding.textContent = "Er zijn nog geen dranken geselecteerd.";
+
+        bonBlok.appendChild(melding);
+      }
+
+      container.appendChild(bonBlok);
+    }
+
+    /*
+     * Verhoog een drank met één.
+     */
     function verhoog(id) {
-      const el = document.getElementById(id);
-      el.textContent = parseInt(el.textContent) + 1;
+      aantallen[id] += 1;
+
       updateTotaal();
+      updateAantalOpScherm(id);
     }
 
+    /*
+     * Verlaag een drank met één, maar nooit lager dan nul.
+     */
     function verlaag(id) {
-      const el = document.getElementById(id);
-      const value = parseInt(el.textContent);
-
-      if (value > 0) {
-        el.textContent = value - 1;
+      if (aantallen[id] > 0) {
+        aantallen[id] -= 1;
       }
 
       updateTotaal();
+      updateAantalOpScherm(id);
     }
 
-    function updateTotaal() {
+    /*
+     * Werk alleen het zichtbare aantal van één drank bij.
+     */
+    function updateAantalOpScherm(id) {
+      const element = document.getElementById("aantal-" + id);
 
+      if (element) {
+        element.textContent = aantallen[id];
+      }
+    }
+
+    /*
+     * Bereken het totale aantal vanuit het aantallen-object.
+     */
+    function updateTotaal() {
       let totaal = 0;
 
-      document.querySelectorAll(".aantal").forEach(el => {
-        totaal += parseInt(el.textContent);
+      Object.values(aantallen).forEach(aantal => {
+        totaal += aantal;
       });
 
-      document.getElementById("totaalAantal").textContent = totaal;
+      totaalAantal.textContent = totaal;
+    }
 
-      if (verbergNulregels) {
-        updateZichtbaarheid();
+    /*
+     * Wissel tussen bestellijst en bon.
+     */
+    function toggleWeergave() {
+      bonModus = !bonModus;
+
+      if (bonModus) {
+        toggleKnop.textContent = "Bestel";
+        renderBon();
+      } else {
+        toggleKnop.textContent = "Bon";
+        renderBestellijst();
       }
     }
 
-    function toggleNulregels() {
-
-      verbergNulregels = !verbergNulregels;
-
-      document.getElementById("toggleKnop").textContent =
-        verbergNulregels
-          ? "Toon 0-lijnen"
-          : "Verberg 0-lijnen";
-
-      updateZichtbaarheid();
-    }
-
-    function updateZichtbaarheid() {
-
-      document.querySelectorAll(".drank").forEach(rij => {
-
-        const aantal = parseInt(
-          rij.querySelector(".aantal").textContent
-        );
-
-        if (verbergNulregels && aantal === 0) {
-          rij.style.display = "none";
-        } else {
-          rij.style.display = "flex";
-        }
-
-      });
-
-      document.querySelectorAll(".drank-blok").forEach(blok => {
-
-        const zichtbareDranken = Array.from(
-          blok.querySelectorAll(".drank")
-        ).some(rij => rij.style.display !== "none");
-
-        blok.style.display =
-          zichtbareDranken ? "block" : "none";
-
-      });
-
-    }
-
+    /*
+     * Zet alle aantallen terug op nul.
+     */
     function resetAlles() {
-
-      document.querySelectorAll(".aantal").forEach(el => {
-        el.textContent = "0";
+      Object.keys(aantallen).forEach(id => {
+        aantallen[id] = 0;
       });
 
-      document.getElementById("totaalAantal").textContent = "0";
+      bonModus = false;
+      toggleKnop.textContent = "Bon";
 
-      verbergNulregels = false;
-
-      document.getElementById("toggleKnop").textContent =
-        "Verberg 0-lijnen";
-
-      document.querySelectorAll(".drank").forEach(rij => {
-        rij.style.display = "flex";
-      });
-
-      document.querySelectorAll(".drank-blok").forEach(blok => {
-        blok.style.display = "block";
-      });
-
+      updateTotaal();
+      renderBestellijst();
     }
 
-    renderDranken();
+    /*
+     * Koppel de knoppen aan hun functies.
+     */
+    toggleKnop.addEventListener("click", toggleWeergave);
+    resetKnop.addEventListener("click", resetAlles);
 
+    /*
+     * Start de toepassing.
+     */
+    initialiseerAantallen();
+    updateTotaal();
+    renderBestellijst();
   </script>
-
 </body>
 </html>

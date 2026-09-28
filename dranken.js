@@ -23,11 +23,13 @@ const drankData = [
       },
       {
         "id": "desperados",
-        "naam": "Desperados"
+        "naam": "Desperados",
+        "verborgenInCompact": true
       },
       {
         "id": "duvel",
-        "naam": "Duvel"
+        "naam": "Duvel",
+        "verborgenInCompact": true
       },
       {
         "id": "kasteelbier-rouge",
@@ -35,7 +37,8 @@ const drankData = [
       },
       {
         "id": "kriek",
-        "naam": "Kriek"
+        "naam": "Kriek",
+        "verborgenInCompact": true
       },
       {
         "id": "la-chouffe",
@@ -43,11 +46,13 @@ const drankData = [
       },
       {
         "id": "omer",
-        "naam": "Omer"
+        "naam": "Omer",
+        "verborgenInCompact": true
       },
       {
         "id": "tripel-karmeliet",
-        "naam": "Tripel Karmeliet"
+        "naam": "Tripel Karmeliet",
+        "verborgenInCompact": true
       },
       {
         "id": "vedett",
@@ -79,23 +84,28 @@ const drankData = [
       },
       {
         "id": "appelsap",
-        "naam": "Appelsap"
+        "naam": "Appelsap",
+        "verborgenInCompact": true
       },
       {
         "id": "aquarius-orange",
-        "naam": "Aquarius Orange"
+        "naam": "Aquarius Orange",
+        "verborgenInCompact": true
       },
       {
         "id": "aquarius-lemon",
-        "naam": "Aquarius Lemon"
+        "naam": "Aquarius Lemon",
+        "verborgenInCompact": true
       },
       {
         "id": "aquarius-red",
-        "naam": "Aquarius Red"
+        "naam": "Aquarius Red",
+        "verborgenInCompact": true
       },
       {
         "id": "chocomelk",
-        "naam": "Chocomelk"
+        "naam": "Chocomelk",
+        "verborgenInCompact": true
       },
       {
         "id": "cola",
@@ -107,11 +117,13 @@ const drankData = [
       },
       {
         "id": "fanta",
-        "naam": "Fanta"
+        "naam": "Fanta",
+        "verborgenInCompact": true
       },
       {
         "id": "fristi",
-        "naam": "Fristi"
+        "naam": "Fristi",
+        "verborgenInCompact": true
       },
       {
         "id": "ice-tea",
@@ -149,15 +161,18 @@ const drankData = [
       },
       {
         "id": "cava-fles",
-        "naam": "Cava Fles"
+        "naam": "Cava Fles",
+        "verborgenInCompact": true
       },
       {
         "id": "rode-wijn-glas",
-        "naam": "Rode Wijn Glas"
+        "naam": "Rode Wijn Glas",
+        "verborgenInCompact": true
       },
       {
         "id": "rode-wijn-fles",
-        "naam": "Rode Wijn Fles"
+        "naam": "Rode Wijn Fles",
+        "verborgenInCompact": true
       },
       {
         "id": "rose-wijn-glas",
@@ -165,7 +180,8 @@ const drankData = [
       },
       {
         "id": "rose-wijn-fles",
-        "naam": "Rosé Wijn Fles"
+        "naam": "Rosé Wijn Fles",
+        "verborgenInCompact": true
       },
       {
         "id": "witte-wijn-glas",
@@ -173,7 +189,8 @@ const drankData = [
       },
       {
         "id": "witte-wijn-fles",
-        "naam": "Witte Wijn Fles"
+        "naam": "Witte Wijn Fles",
+        "verborgenInCompact": true
       }
     ]
   },
@@ -191,11 +208,13 @@ const drankData = [
       },
       {
         "id": "koffie-deca-klein",
-        "naam": "Koffie Deca Klein"
+        "naam": "Koffie Deca Klein",
+        "verborgenInCompact": true
       },
       {
         "id": "koffie-deca-groot",
-        "naam": "Koffie Deca Groot"
+        "naam": "Koffie Deca Groot",
+        "verborgenInCompact": true
       },
       {
         "id": "thee-klein",
@@ -207,45 +226,55 @@ const drankData = [
       },
       {
         "id": "chocomelk-warm",
-        "naam": "Chocomelk"
+        "naam": "Chocomelk",
+        "verborgenInCompact": true
       },
       {
         "id": "soep-pakje-curry",
-        "naam": "Soep Pakje Curry"
+        "naam": "Soep Pakje Curry",
+        "verborgenInCompact": true
       },
       {
         "id": "soep-pakje-gevogelte",
-        "naam": "Soep Pakje Gevogelte"
+        "naam": "Soep Pakje Gevogelte",
+        "verborgenInCompact": true
       },
       {
         "id": "soep-pakje-erwten",
-        "naam": "Soep Pakje Erwten"
+        "naam": "Soep Pakje Erwten",
+        "verborgenInCompact": true
       },
       {
         "id": "soep-pakje-tomaten",
-        "naam": "Soep Pakje Tomaten"
+        "naam": "Soep Pakje Tomaten",
+        "verborgenInCompact": true
       }
     ]
   },
   {
     "id": "apero",
     "naam": "Apero",
+        "verborgenInCompact": true,
     "dranken": [
       {
         "id": "martini-wit",
-        "naam": "Martini Wit"
+        "naam": "Martini Wit",
+        "verborgenInCompact": true
       },
       {
         "id": "martini-rood",
-        "naam": "Martino Rood"
+        "naam": "Martino Rood",
+        "verborgenInCompact": true
       },
       {
         "id": "porto",
-        "naam": "Porto"
+        "naam": "Porto",
+        "verborgenInCompact": true
       },
       {
         "id": "jenever",
-        "naam": "Jenever"
+        "naam": "Jenever",
+        "verborgenInCompact": true
       }
     ]
   },

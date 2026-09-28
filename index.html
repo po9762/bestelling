@@ -6,12 +6,12 @@
 
   <meta charset="UTF-8">
 
-  <title>Drankbestelling</title>
-
   <meta
     name="viewport"
     content="width=device-width, initial-scale=1.0"
   >
+
+  <title>Drankbestelling</title>
 
   <style>
     :root {
@@ -31,8 +31,8 @@
     }
 
     .top-balk,
-    .drank-blok,
-    .toggle-knop {
+    .knoppen-balk,
+    .drank-blok {
       width: min(100%, var(--blokbreedte));
       box-sizing: border-box;
     }
@@ -50,9 +50,15 @@
       font-weight: bold;
     }
 
-    .toggle-knop {
-      display: block;
+    .knoppen-balk {
+      display: flex;
+      gap: 10px;
       margin-bottom: 15px;
+    }
+
+    .toggle-knop {
+      flex: 1;
+      box-sizing: border-box;
       background-color: #28a745;
       color: white;
       border: none;
@@ -66,6 +72,22 @@
 
     .toggle-knop:hover {
       background-color: #218838;
+    }
+
+    #compactKnop {
+      background-color: #6c757d;
+    }
+
+    #compactKnop:hover {
+      background-color: #5a6268;
+    }
+
+    #compactKnop.actief {
+      background-color: #fd7e14;
+    }
+
+    #compactKnop.actief:hover {
+      background-color: #dc6c0b;
     }
 
     .drank-blok {
@@ -122,7 +144,6 @@
       background-color: #b02a37;
     }
 
-    /* Opmaak van de bon */
     .bon-rij {
       padding: 8px 0;
       border-bottom: 1px solid #eeeeee;
@@ -158,13 +179,23 @@
     </button>
   </div>
 
-  <button
-    id="toggleKnop"
-    class="toggle-knop"
-    type="button"
-  >
-    Bon
-  </button>
+  <div class="knoppen-balk">
+    <button
+      id="toggleKnop"
+      class="toggle-knop"
+      type="button"
+    >
+      Bon
+    </button>
+
+    <button
+      id="compactKnop"
+      class="toggle-knop"
+      type="button"
+    >
+      Compact
+    </button>
+  </div>
 
   <div id="drankenContainer"></div>
 
@@ -172,30 +203,62 @@
 
   <script>
     /*
-     * De aantallen worden hier bewaard.
-     * De HTML-weergave is daardoor niet langer de gegevensbron.
+     * Hier worden de aantallen van alle dranken bewaard.
      */
     const aantallen = {};
 
     /*
      * false = bestellijst
-     * true  = bon
+     * true = bon
      */
     let bonModus = false;
 
-    const container = document.getElementById("drankenContainer");
-    const toggleKnop = document.getElementById("toggleKnop");
-    const resetKnop = document.getElementById("reset");
-    const totaalAantal = document.getElementById("totaalAantal");
+    /*
+     * false = alle dranken tonen
+     * true = compacte drankenlijst tonen
+     */
+    let compacteModus = false;
 
-function updateKnopTekst() {
-toggleKnop.textContent = bonModus
-? "Bestel"
-: "Bon";
-}
+    const container =
+      document.getElementById("drankenContainer");
+
+    const toggleKnop =
+      document.getElementById("toggleKnop");
+
+    const compactKnop =
+      document.getElementById("compactKnop");
+
+    const resetKnop =
+      document.getElementById("reset");
+
+    const totaalAantal =
+      document.getElementById("totaalAantal");
 
     /*
-     * Maak voor elke drank een beginwaarde van 0.
+     * Beheer de tekst van de Bon-knop op één plaats.
+     */
+    function updateKnopTekst() {
+      toggleKnop.textContent = bonModus
+        ? "Bestel"
+        : "Bon";
+    }
+
+    /*
+     * Beheer de tekst en kleur van de Compact-knop.
+     */
+    function updateCompactKnopTekst() {
+      compactKnop.textContent = compacteModus
+        ? "Volledig"
+        : "Compact";
+
+      compactKnop.classList.toggle(
+        "actief",
+        compacteModus
+      );
+    }
+
+    /*
+     * Maak voor iedere drank een beginwaarde van nul.
      */
     function initialiseerAantallen() {
       drankData.forEach(categorie => {
@@ -206,21 +269,46 @@ toggleKnop.textContent = bonModus
     }
 
     /*
-     * Toon de gewone bestellijst:
-     * categorieën, dranknamen, min- en plusknoppen.
+     * Controleer of een drank zichtbaar moet zijn.
+     *
+     * In compacte modus worden dranken met:
+     * verborgenInCompact: true
+     * niet getoond.
+     */
+    function isDrankZichtbaar(drank) {
+      return !(
+        compacteModus &&
+        drank.verborgenInCompact === true
+      );
+    }
+
+    /*
+     * Bouw de bestellijst op.
      */
     function renderBestellijst() {
       container.innerHTML = "";
 
       drankData.forEach(categorie => {
+        const zichtbareDranken =
+          categorie.dranken.filter(isDrankZichtbaar);
+
+        /*
+         * Toon geen leeg categorieblok.
+         */
+        if (zichtbareDranken.length === 0) {
+          return;
+        }
+
         const blok = document.createElement("div");
         blok.className = "drank-blok";
+        blok.id = categorie.id;
 
         const titel = document.createElement("h2");
         titel.textContent = categorie.naam;
+
         blok.appendChild(titel);
 
-        categorie.dranken.forEach(drank => {
+        zichtbareDranken.forEach(drank => {
           const rij = document.createElement("div");
           rij.className = "drank";
 
@@ -228,12 +316,17 @@ toggleKnop.textContent = bonModus
           naam.className = "drank-naam";
           naam.textContent = drank.naam;
 
-          const bediening = document.createElement("div");
+          const bediening =
+            document.createElement("div");
+
           bediening.className = "bediening";
 
-          const minKnop = document.createElement("button");
+          const minKnop =
+            document.createElement("button");
+
           minKnop.type = "button";
           minKnop.textContent = "-";
+
           minKnop.setAttribute(
             "aria-label",
             "Verminder " + drank.naam
@@ -243,14 +336,19 @@ toggleKnop.textContent = bonModus
             verlaag(drank.id);
           });
 
-          const aantal = document.createElement("span");
+          const aantal =
+            document.createElement("span");
+
           aantal.className = "aantal";
           aantal.id = "aantal-" + drank.id;
           aantal.textContent = aantallen[drank.id];
 
-          const plusKnop = document.createElement("button");
+          const plusKnop =
+            document.createElement("button");
+
           plusKnop.type = "button";
           plusKnop.textContent = "+";
+
           plusKnop.setAttribute(
             "aria-label",
             "Verhoog " + drank.naam
@@ -275,9 +373,9 @@ toggleKnop.textContent = bonModus
     }
 
     /*
-     * Toon de bon:
-     * alle gekozen dranken in één blok,
-     * zonder categorieën en zonder knoppen.
+     * Toon alle bestelde dranken in één blok.
+     *
+     * Compacte modus heeft geen invloed op de bon.
      */
     function renderBon() {
       container.innerHTML = "";
@@ -301,7 +399,9 @@ toggleKnop.textContent = bonModus
             naam.className = "drank-naam";
             naam.textContent = drank.naam;
 
-            const aantalElement = document.createElement("span");
+            const aantalElement =
+              document.createElement("span");
+
             aantalElement.className = "bon-aantal";
             aantalElement.textContent = aantal;
 
@@ -313,14 +413,12 @@ toggleKnop.textContent = bonModus
         });
       });
 
-      /*
-       * Als nog niets geselecteerd is, toon dan een melding
-       * in plaats van een leeg wit blok.
-       */
       if (!heeftDranken) {
         const melding = document.createElement("p");
         melding.className = "lege-bon";
-        melding.textContent = "Er zijn nog geen dranken geselecteerd.";
+
+        melding.textContent =
+          "Er zijn nog geen dranken geselecteerd.";
 
         bonBlok.appendChild(melding);
       }
@@ -339,7 +437,7 @@ toggleKnop.textContent = bonModus
     }
 
     /*
-     * Verlaag een drank met één, maar nooit lager dan nul.
+     * Verlaag een drank met één, maar nooit onder nul.
      */
     function verlaag(id) {
       if (aantallen[id] > 0) {
@@ -351,10 +449,11 @@ toggleKnop.textContent = bonModus
     }
 
     /*
-     * Werk alleen het zichtbare aantal van één drank bij.
+     * Werk het zichtbare aantal van één drank bij.
      */
     function updateAantalOpScherm(id) {
-      const element = document.getElementById("aantal-" + id);
+      const element =
+        document.getElementById("aantal-" + id);
 
       if (element) {
         element.textContent = aantallen[id];
@@ -362,60 +461,92 @@ toggleKnop.textContent = bonModus
     }
 
     /*
-     * Bereken het totale aantal vanuit het aantallen-object.
+     * Bereken het totale aantal drankjes.
      */
     function updateTotaal() {
-      let totaal = 0;
-
-      Object.values(aantallen).forEach(aantal => {
-        totaal += aantal;
-      });
+      const totaal = Object.values(aantallen).reduce(
+        (som, aantal) => som + aantal,
+        0
+      );
 
       totaalAantal.textContent = totaal;
     }
 
     /*
-     * Wissel tussen bestellijst en bon.
+     * Wissel tussen de bestellijst en de bon.
      */
+    function toggleWeergave() {
+      bonModus = !bonModus;
 
-function toggleWeergave() {
-bonModus = !bonModus;
- 
-updateKnopTekst();
- 
-if (bonModus) {
-renderBon();
-} else {
-renderBestellijst();
-}
-}
+      updateKnopTekst();
+
+      if (bonModus) {
+        renderBon();
+      } else {
+        renderBestellijst();
+      }
+    }
+
+    /*
+     * Zet de compacte modus aan of uit.
+     */
+    function toggleCompacteModus() {
+      compacteModus = !compacteModus;
+
+      updateCompactKnopTekst();
+
+      /*
+       * Als de bon zichtbaar is, blijft deze ongewijzigd.
+       * De compacte instelling wordt gebruikt wanneer de
+       * gebruiker terugkeert naar de bestellijst.
+       */
+      if (!bonModus) {
+        renderBestellijst();
+      }
+    }
 
     /*
      * Zet alle aantallen terug op nul.
+     * De gekozen compacte modus blijft behouden.
      */
     function resetAlles() {
       Object.keys(aantallen).forEach(id => {
         aantallen[id] = 0;
       });
 
-bonModus = false;
-updateKnopTekst();
+      bonModus = false;
 
       updateTotaal();
+      updateKnopTekst();
+      updateCompactKnopTekst();
       renderBestellijst();
     }
 
     /*
-     * Koppel de knoppen aan hun functies.
+     * Koppel de knoppen aan de functies.
      */
-    toggleKnop.addEventListener("click", toggleWeergave);
-    resetKnop.addEventListener("click", resetAlles);
+    toggleKnop.addEventListener(
+      "click",
+      toggleWeergave
+    );
+
+    compactKnop.addEventListener(
+      "click",
+      toggleCompacteModus
+    );
+
+    resetKnop.addEventListener(
+      "click",
+      resetAlles
+    );
 
     /*
      * Start de toepassing.
      */
     initialiseerAantallen();
     updateTotaal();
+    updateKnopTekst();
+    updateCompactKnopTekst();
     renderBestellijst();
   </script>
 </body>

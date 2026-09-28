@@ -1,7 +1,7 @@
 const drankData = [
   {
-    "id": "van-t-vat",
-    "naam": "Van ’t vat",
+    "id": "Bieren",
+    "naam": "Bieren",
     "dranken": [
       {
         "id": "cristal-boerke",
@@ -10,13 +10,7 @@ const drankData = [
       {
         "id": "cristal-ribbelke",
         "naam": "Cristal ribbelke"
-      }
-    ]
-  },
-  {
-    "id": "bieren",
-    "naam": "Bieren",
-    "dranken": [
+      },
       {
         "id": "carlsberg",
         "naam": "Carlsberg"
@@ -57,13 +51,7 @@ const drankData = [
       {
         "id": "vedett",
         "naam": "Vedett"
-      }
-    ]
-  },
-  {
-    "id": "nul-nul-procent",
-    "naam": "0/0 Procent",
-    "dranken": [
+      },
       {
         "id": "cristal-0-0",
         "naam": "Cristal 0/0"
@@ -204,7 +192,8 @@ const drankData = [
       },
       {
         "id": "koffie-groot",
-        "naam": "Koffie Groot"
+        "naam": "Koffie Groot",
+        "verborgenInCompact": true
       },
       {
         "id": "koffie-deca-klein",

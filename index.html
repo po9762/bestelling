@@ -90,6 +90,14 @@
       background-color: #dc6c0b;
     }
 
+    #installKnop {
+      background-color: #007bff;
+    }
+
+    #installKnop:hover {
+      background-color: #0056b3;
+    }
+
     .drank-blok {
       background: #fff;
       border-radius: 12px;
@@ -195,6 +203,15 @@
     >
       Compact
     </button>
+
+    <button
+      id="installKnop"
+      class="toggle-knop"
+      type="button"
+      hidden
+    >
+      Op beginscherm zetten
+    </button>
   </div>
 
   <div id="drankenContainer"></div>
@@ -231,8 +248,76 @@
     const resetKnop =
       document.getElementById("reset");
 
+    const installKnop =
+      document.getElementById("installKnop");
+
     const totaalAantal =
       document.getElementById("totaalAantal");
+
+    /*
+     * PWA-installatie:
+     * - Verberg de knop wanneer de pagina al als geïnstalleerde app draait.
+     * - Android/Chrome: gebruik de native installatieprompt.
+     * - iPhone/iPad: Safari kan installatie niet via JavaScript starten,
+     *   dus toon de stappen om de pagina via Delen aan het beginscherm toe te voegen.
+     */
+    let uitgesteldeInstallatiePrompt = null;
+
+    function draaitAlsGeinstalleerdeApp() {
+      return (
+        window.matchMedia("(display-mode: standalone)").matches ||
+        window.navigator.standalone === true
+      );
+    }
+
+    function updateInstallKnop() {
+      installKnop.hidden = draaitAlsGeinstalleerdeApp();
+    }
+
+    window.addEventListener("beforeinstallprompt", event => {
+      event.preventDefault();
+      uitgesteldeInstallatiePrompt = event;
+      updateInstallKnop();
+    });
+
+    window.addEventListener("appinstalled", () => {
+      uitgesteldeInstallatiePrompt = null;
+      updateInstallKnop();
+    });
+
+    installKnop.addEventListener("click", async () => {
+      if (uitgesteldeInstallatiePrompt) {
+        uitgesteldeInstallatiePrompt.prompt();
+
+        try {
+          await uitgesteldeInstallatiePrompt.userChoice;
+        } catch (error) {
+          // De gebruiker kan de installatieprompt sluiten; dat is geen fout.
+        }
+
+        uitgesteldeInstallatiePrompt = null;
+        updateInstallKnop();
+        return;
+      }
+
+      const isAppleMobile =
+        /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+        (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+
+      if (isAppleMobile) {
+        alert(
+          "Op iPhone/iPad: tik op de knop 'Delen' in Safari en kies 'Zet op beginscherm'."
+        );
+      } else {
+        alert(
+          "Gebruik het installatie- of deelmenu van je browser om deze pagina aan het beginscherm toe te voegen."
+        );
+      }
+    });
+
+    window.addEventListener("pageshow", updateInstallKnop);
+    window.addEventListener("resize", updateInstallKnop);
+    updateInstallKnop();
 
     /*
      * Beheer de tekst van de Bon-knop op één plaats.

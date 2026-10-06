@@ -3,7 +3,7 @@ const drankData = [
     "id": "bieren",
     "naam": "Bieren",
     "dranken": [
-      { "id": "cristal-boerke", "naam": "cristal boerke" },
+      { "id": "cristal-boerke", "naam": "Cristal boerke" },
       { "id": "cristal-ribbelke", "naam": "Cristal ribbelke" },
       { "id": "carlsberg", "naam": "Carlsberg" },
       { "id": "desperados", "naam": "Desperados", "verborgenInCompact": true },
@@ -13,9 +13,9 @@ const drankData = [
       { "id": "la-chouffe", "naam": "La Chouffe" },
       { "id": "omer", "naam": "Omer", "verborgenInCompact": true },
       { "id": "tripel-karmeliet", "naam": "Tripel Karmeliet", "verborgenInCompact": true },
-      { "id": "vedett", "naam": "Vedett" },
+      { "id": "vedett", "naam": "Vedett", "verborgenInCompact": true },
       { "id": "cristal-0-0", "naam": "Cristal 0/0" },
-      { "id": "affligem-0-0", "naam": "Affligem 0/0" }
+      { "id": "affligem-0-0", "naam": "Affligem 0/0", "verborgenInCompact": true }
     ]
   },
   {

@@ -3,7 +3,7 @@ const drankData = [
     "id": "bieren",
     "naam": "Bieren",
     "dranken": [
-      { "id": "cristal-boerke", "naam": "Cristal boerke" },
+      { "id": "cristal-boerke", "naam": "cristal boerke" },
       { "id": "cristal-ribbelke", "naam": "Cristal ribbelke" },
       { "id": "carlsberg", "naam": "Carlsberg" },
       { "id": "desperados", "naam": "Desperados", "verborgenInCompact": true },

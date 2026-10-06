@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Saldo test</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f8f8f8;
+      margin: 20px;
+    }
+
+    .blok {
+      width: min(100%, 400px);
+      box-sizing: border-box;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+      padding: 20px;
+      margin-bottom: 15px;
+    }
+
+    h2 {
+      margin-top: 0;
+      color: #333;
+    }
+
+    iframe {
+      width: 100%;
+      height: 600px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    a {
+      color: #007bff;
+    }
+  </style>
+</head>
+<body>
+  <div class="blok">
+    <h2>Iframe-test</h2>
+    <p>
+      Zie je hieronder de Yanbo-pagina (en kan je inloggen)?
+      Dan werkt insluiten. Zie je een lege, grijze of foutpagina
+      ("weigerde verbinding", "kan niet worden weergegeven")?
+      Dan blokkeert Yanbo het.
+    </p>
+    <p>
+      Ter vergelijking:
+      <a href="https://pos.yanboproducts.eu" target="_blank" rel="noopener">
+        open de site gewoon in een nieuw tabblad
+      </a>.
+    </p>
+  </div>
+
+  <div class="blok">
+    <iframe
+      src="https://pos.yanboproducts.eu"
+      title="Mijn Kaart"
+    ></iframe>
+  </div>
+</body>
+</html>

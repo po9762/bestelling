@@ -11,49 +11,88 @@
     content="width=device-width, initial-scale=1.0"
   >
 
+  <!-- Altijd de lichte versie, ook als de gsm in donkere modus staat -->
+  <meta name="theme-color" content="#f6f3ee">
+  <meta name="color-scheme" content="light">
+
   <title>De Leste</title>
 
   <style>
+    /*
+     * ============================================================
+     * KLEUREN
+     * Alle kleuren staan hier op één plaats. Het palet is
+     * afgeleid van het goudgele bier-icoon.
+     * ============================================================
+     */
+    :root {
+      --achtergrond: #f6f3ee;
+      --kaart: #ffffff;
+      --tekst: #1f1a12;
+      --tekst-zacht: #9a9286;
+      --lijn: #ebe5da;
+
+      --accent: #f6b51e;          /* goudgeel van het icoon */
+      --accent-sterk: #a86b00;    /* donker goud voor tekst en randen */
+      --op-accent: #3a2600;       /* tekst op een goudgele knop */
+      --besteld: #fff3d1;         /* achtergrond van een bestelde rij */
+
+      --gevaar: #c62828;
+      --schaduw: 0 1px 3px rgba(60, 40, 0, 0.08),
+                 0 4px 12px rgba(60, 40, 0, 0.06);
+    }
+
+    /*
+     * ============================================================
+     * AFMETINGEN
+     * ============================================================
+     */
     :root {
       --blokbreedte: 400px;
+
+      /*
+       * Lettergrootte van de dranknamen. Pas gerust aan:
+       * de rijhoogte rekent zichzelf mee uit.
+       */
+      --naam-grootte: 21px;
+      --naam-regelhoogte: 1.2;
+
+      /*
+       * Elke rij is even hoog: genoeg voor twee regels tekst
+       * of voor een knop van 44px, wat het grootste is.
+       * Zo staan alle knoppen altijd op exact dezelfde afstand.
+       */
+      --rij-hoogte: max(
+        48px,
+        calc(var(--naam-grootte) * var(--naam-regelhoogte) * 2 + 4px)
+      );
+    }
+
+    /*
+     * ============================================================
+     * ALGEMEEN
+     * ============================================================
+     */
+    * {
+      box-sizing: border-box;
     }
 
     body {
       font-family: Arial, sans-serif;
-      background-color: #f8f8f8;
-      margin: 20px;
+      background-color: var(--achtergrond);
+      color: var(--tekst);
+      margin: 0;
+      padding: 0 16px 24px;
+    }
+
+    .pagina {
+      width: min(100%, var(--blokbreedte));
     }
 
     h2 {
-      color: #333;
-      margin-top: 0;
-      margin-bottom: 15px;
-    }
-
-    .top-balk,
-    .knoppen-balk,
-    .drank-blok {
-      width: min(100%, var(--blokbreedte));
-      box-sizing: border-box;
-    }
-
-    .top-balk {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: #fff;
-      border-radius: 12px;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-      padding: 20px;
-      margin-bottom: 15px;
-      font-size: 18px;
-      font-weight: bold;
-    }
-
-    .knoppen-balk {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 15px;
+      color: var(--tekst);
+      font-size: 22px;
+      margin: 0 0 8px;
     }
 
     /*
@@ -62,70 +101,137 @@
      * tikken, terwijl knijpen om te zoomen gewoon blijft werken.
      */
     button {
-      background-color: #007bff;
-      color: white;
+      font-family: inherit;
       border: none;
-      border-radius: 8px;
+      border-radius: 10px;
       cursor: pointer;
-      font-size: 22px;
       min-width: 44px;
       min-height: 44px;
-      padding: 6px 12px;
       touch-action: manipulation;
       -webkit-tap-highlight-color: transparent;
     }
 
     button:active {
-      filter: brightness(0.85);
-    }
-
-    .toggle-knop {
-      flex: 1;
-      box-sizing: border-box;
-      background-color: #28a745;
-      border-radius: 12px;
-      padding: 12px;
-      font-size: 18px;
-      font-weight: bold;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-    }
-
-    #compactKnop {
-      background-color: #6c757d;
-    }
-
-    #compactKnop.actief {
-      background-color: #fd7e14;
-    }
-
-    #installKnop {
-      background-color: #007bff;
-    }
-
-    #reset {
-      background-color: #dc3545;
-      font-size: 18px;
+      filter: brightness(0.88);
     }
 
     /*
-     * Hover-kleuren alleen op toestellen met een muis,
-     * zodat ze op een touchscreen niet blijven "plakken".
+     * ============================================================
+     * KOPBALK (blijft bovenaan staan bij het scrollen)
+     * ============================================================
      */
-    @media (hover: hover) {
-      button:hover { background-color: #0056b3; }
-      .toggle-knop:hover { background-color: #218838; }
-      #compactKnop:hover { background-color: #5a6268; }
-      #compactKnop.actief:hover { background-color: #dc6c0b; }
-      #installKnop:hover { background-color: #0056b3; }
-      #reset:hover { background-color: #b02a37; }
+    .kop {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: var(--achtergrond);
+      padding: 12px 0 10px;
+      margin-bottom: 4px;
     }
 
-    .drank-blok {
-      background: #fff;
+    /* Zachte overgang onder de kopbalk bij het scrollen */
+    .kop::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: -12px;
+      height: 12px;
+      background: linear-gradient(var(--achtergrond), transparent);
+      pointer-events: none;
+    }
+
+    .kop-rij {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .kop-rij + .kop-rij {
+      margin-top: 8px;
+    }
+
+    .totaal {
+      flex: 1;
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      font-size: 18px;
+      font-weight: bold;
+    }
+
+    .totaal-getal {
+      font-size: 28px;
+      color: var(--accent-sterk);
+    }
+
+    .knop-klein {
+      background: var(--kaart);
+      color: var(--tekst);
+      font-size: 16px;
+      font-weight: bold;
+      padding: 0 14px;
+      box-shadow: var(--schaduw);
+    }
+
+    #reset {
+      color: var(--gevaar);
+      box-shadow: inset 0 0 0 2px var(--gevaar);
+      background: transparent;
+    }
+
+    /* Grote Bon/Bestel-knop */
+    #toggleKnop {
+      flex: 1;
+      background: var(--accent);
+      color: var(--op-accent);
+      font-size: 18px;
+      font-weight: bold;
+      min-height: 48px;
+      box-shadow: var(--schaduw);
+    }
+
+    /*
+     * Schakelaar met twee delen: [Compact | Volledig].
+     * Het actieve deel is wit (of donker in donkere modus).
+     */
+    .segment {
+      flex: 1;
+      display: flex;
+      background: var(--lijn);
       border-radius: 12px;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-      padding: 20px;
-      margin-bottom: 20px;
+      padding: 3px;
+      min-height: 48px;
+    }
+
+    .segment button {
+      flex: 1;
+      min-height: 42px;
+      background: transparent;
+      color: var(--tekst-zacht);
+      font-size: 16px;
+      font-weight: bold;
+      border-radius: 9px;
+      padding: 0 6px;
+    }
+
+    .segment button[aria-pressed="true"] {
+      background: var(--kaart);
+      color: var(--tekst);
+      box-shadow: var(--schaduw);
+    }
+
+    /*
+     * ============================================================
+     * DRANKBLOKKEN
+     * ============================================================
+     */
+    .drank-blok {
+      background: var(--kaart);
+      border-radius: 14px;
+      box-shadow: var(--schaduw);
+      padding: 16px 16px 12px;
+      margin-bottom: 16px;
     }
 
     .drank {
@@ -133,91 +239,188 @@
       align-items: center;
       justify-content: space-between;
       gap: 12px;
-      margin: 10px 0;
+      height: var(--rij-hoogte);
+      margin: 4px -8px;
+      padding: 0 8px;
+      border-radius: 10px;
+      transition: background-color 0.15s;
     }
 
+    /* Rij waarvan al iets besteld is: goudgele achtergrond */
+    .drank.besteld {
+      background: var(--besteld);
+    }
+
+    /*
+     * Lange namen lopen door op een tweede regel. Wat daarna nog
+     * niet past, wordt afgekapt met "…", zodat een rij nooit hoger
+     * wordt dan de andere.
+     */
     .drank-naam {
       flex: 1;
-      font-size: 18px;
+      min-width: 0;
+      font-size: var(--naam-grootte);
+      line-height: var(--naam-regelhoogte);
+      overflow-wrap: anywhere;
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+      overflow: hidden;
     }
 
+    .drank.besteld .drank-naam {
+      font-weight: bold;
+    }
+
+    /*
+     * De knoppen krijgen altijd dezelfde breedte en krimpen nooit,
+     * hoe lang de dranknaam ook is.
+     */
     .bediening {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .bediening button {
+      width: 44px;
+      height: 44px;
+      padding: 0;
+      font-size: 26px;
+      line-height: 1;
+    }
+
+    /* Plusknop: gevuld, want die gebruik je het meest */
+    .plus-knop {
+      background: var(--accent);
+      color: var(--op-accent);
+    }
+
+    /* Minknop: rustiger, alleen een rand */
+    .min-knop {
+      background: transparent;
+      color: var(--accent-sterk);
+      box-shadow: inset 0 0 0 2px var(--accent-sterk);
+    }
+
+    /* Minknop vervaagt zolang er niets te verminderen valt */
+    .drank:not(.besteld) .min-knop {
+      opacity: 0.3;
     }
 
     .aantal {
-      width: 32px;
+      flex-shrink: 0;
+      width: 36px;
       text-align: center;
       font-weight: bold;
-      font-size: 20px;
+      font-size: 22px;
+      color: var(--tekst-zacht);
     }
 
+    .drank.besteld .aantal {
+      color: var(--accent-sterk);
+    }
+
+    /*
+     * ============================================================
+     * BON
+     * ============================================================
+     */
     .bon-rij {
-      padding: 8px 0;
-      border-bottom: 1px solid #eeeeee;
-    }
-
-    .bon-rij:last-child {
-      border-bottom: none;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--lijn);
+      font-size: var(--naam-grootte);
     }
 
     .bon-aantal {
       min-width: 40px;
       text-align: right;
       font-weight: bold;
-      font-size: 20px;
+      font-size: 22px;
+    }
+
+    .bon-totaal {
+      border-bottom: none;
+      border-top: 2px solid var(--tekst);
+      margin-top: -1px;
+      font-weight: bold;
+    }
+
+    .bon-totaal .bon-aantal {
+      color: var(--accent-sterk);
+      font-size: 26px;
     }
 
     .lege-bon {
-      color: #666;
+      color: var(--tekst-zacht);
       font-style: italic;
-      margin: 0;
+      margin: 4px 0 8px;
+    }
+
+    /*
+     * Hover-effect alleen op toestellen met een muis,
+     * zodat het op een touchscreen niet blijft "plakken".
+     */
+    @media (hover: hover) {
+      button:hover {
+        filter: brightness(0.94);
+      }
     }
   </style>
 </head>
 
 <body>
-  <div class="top-balk">
-    <div>
-      Totaal aantal drankjes:
-      <span id="totaalAantal">0</span>
-    </div>
+  <div class="pagina">
+    <header class="kop">
+      <div class="kop-rij">
+        <div class="totaal">
+          Totaal
+          <span id="totaalAantal" class="totaal-getal">0</span>
+        </div>
 
-    <button id="reset" type="button">
-      Reset
-    </button>
+        <button
+          id="installKnop"
+          class="knop-klein"
+          type="button"
+          hidden
+        >
+          Installeer
+        </button>
+
+        <button
+          id="reset"
+          class="knop-klein"
+          type="button"
+        >
+          Reset
+        </button>
+      </div>
+
+      <div class="kop-rij">
+        <button id="toggleKnop" type="button">
+          Bon
+        </button>
+
+        <div class="segment" role="group" aria-label="Weergave">
+          <button id="compactKnop" type="button" aria-pressed="true">
+            Compact
+          </button>
+
+          <button id="volledigKnop" type="button" aria-pressed="false">
+            Volledig
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <div id="drankenContainer"></div>
   </div>
-
-  <div class="knoppen-balk">
-    <button
-      id="toggleKnop"
-      class="toggle-knop"
-      type="button"
-    >
-      Bon
-    </button>
-
-    <button
-      id="compactKnop"
-      class="toggle-knop"
-      type="button"
-    >
-      Compact
-    </button>
-
-    <button
-      id="installKnop"
-      class="toggle-knop"
-      type="button"
-      hidden
-    >
-      Op beginscherm zetten
-    </button>
-  </div>
-
-  <div id="drankenContainer"></div>
 
   <script src="dranken.js"></script>
 
@@ -253,6 +456,9 @@
 
     const compactKnop =
       document.getElementById("compactKnop");
+
+    const volledigKnop =
+      document.getElementById("volledigKnop");
 
     const resetKnop =
       document.getElementById("reset");
@@ -407,16 +613,17 @@
     }
 
     /*
-     * Beheer de tekst en kleur van de Compact-knop.
+     * Toon in de schakelaar welke weergave actief is.
      */
-    function updateCompactKnopTekst() {
-      compactKnop.textContent = compacteModus
-        ? "Volledig"
-        : "Compact";
+    function updateWeergaveSchakelaar() {
+      compactKnop.setAttribute(
+        "aria-pressed",
+        String(compacteModus)
+      );
 
-      compactKnop.classList.toggle(
-        "actief",
-        compacteModus
+      volledigKnop.setAttribute(
+        "aria-pressed",
+        String(!compacteModus)
       );
     }
 
@@ -476,6 +683,7 @@
         zichtbareDranken.forEach(drank => {
           const rij = document.createElement("div");
           rij.className = "drank";
+          rij.id = "rij-" + drank.id;
 
           const naam = document.createElement("span");
           naam.className = "drank-naam";
@@ -490,6 +698,7 @@
             document.createElement("button");
 
           minKnop.type = "button";
+          minKnop.className = "min-knop";
           minKnop.textContent = "−";
 
           minKnop.setAttribute(
@@ -506,12 +715,12 @@
 
           aantal.className = "aantal";
           aantal.id = "aantal-" + drank.id;
-          aantal.textContent = aantallen[drank.id];
 
           const plusKnop =
             document.createElement("button");
 
           plusKnop.type = "button";
+          plusKnop.className = "plus-knop";
           plusKnop.textContent = "+";
 
           plusKnop.setAttribute(
@@ -535,10 +744,39 @@
 
         container.appendChild(blok);
       });
+
+      drankData.forEach(categorie => {
+        categorie.dranken.forEach(drank => {
+          updateAantalOpScherm(drank.id);
+        });
+      });
     }
 
     /*
-     * Toon alle bestelde dranken in één blok.
+     * Maak een rij voor de bon.
+     */
+    function maakBonRij(tekst, aantal, extraKlasse) {
+      const rij = document.createElement("div");
+      rij.className = "bon-rij" + (extraKlasse ? " " + extraKlasse : "");
+
+      const naam = document.createElement("span");
+      naam.textContent = tekst;
+
+      const aantalElement =
+        document.createElement("span");
+
+      aantalElement.className = "bon-aantal";
+      aantalElement.textContent = aantal;
+
+      rij.appendChild(naam);
+      rij.appendChild(aantalElement);
+
+      return rij;
+    }
+
+    /*
+     * Toon alle bestelde dranken in één blok,
+     * met een titel en onderaan het totaal.
      *
      * Compacte modus heeft geen invloed op de bon.
      */
@@ -548,6 +786,10 @@
       const bonBlok = document.createElement("div");
       bonBlok.className = "drank-blok";
 
+      const titel = document.createElement("h2");
+      titel.textContent = "Bon";
+      bonBlok.appendChild(titel);
+
       let heeftDranken = false;
 
       drankData.forEach(categorie => {
@@ -556,29 +798,16 @@
 
           if (aantal > 0) {
             heeftDranken = true;
-
-            const rij = document.createElement("div");
-            rij.className = "drank bon-rij";
-
-            const naam = document.createElement("span");
-            naam.className = "drank-naam";
-            naam.textContent = drank.naam;
-
-            const aantalElement =
-              document.createElement("span");
-
-            aantalElement.className = "bon-aantal";
-            aantalElement.textContent = aantal;
-
-            rij.appendChild(naam);
-            rij.appendChild(aantalElement);
-
-            bonBlok.appendChild(rij);
+            bonBlok.appendChild(maakBonRij(drank.naam, aantal));
           }
         });
       });
 
-      if (!heeftDranken) {
+      if (heeftDranken) {
+        bonBlok.appendChild(
+          maakBonRij("Totaal", berekenTotaal(), "bon-totaal")
+        );
+      } else {
         const melding = document.createElement("p");
         melding.className = "lege-bon";
 
@@ -616,7 +845,8 @@
     }
 
     /*
-     * Werk het zichtbare aantal van één drank bij.
+     * Werk het zichtbare aantal van één drank bij,
+     * en kleur de rij als er iets besteld is.
      */
     function updateAantalOpScherm(id) {
       const element =
@@ -624,6 +854,13 @@
 
       if (element) {
         element.textContent = aantallen[id];
+      }
+
+      const rij =
+        document.getElementById("rij-" + id);
+
+      if (rij) {
+        rij.classList.toggle("besteld", aantallen[id] > 0);
       }
     }
 
@@ -643,6 +880,7 @@
 
     /*
      * Wissel tussen de bestellijst en de bon.
+     * Daarna terug naar boven, zodat de lijst bovenaan begint.
      */
     function toggleWeergave() {
       bonModus = !bonModus;
@@ -654,15 +892,17 @@
       } else {
         renderBestellijst();
       }
+
+      window.scrollTo(0, 0);
     }
 
     /*
-     * Zet de compacte modus aan of uit.
+     * Kies compacte (true) of volledige (false) weergave.
      */
-    function toggleCompacteModus() {
-      compacteModus = !compacteModus;
+    function zetCompacteModus(waarde) {
+      compacteModus = waarde;
 
-      updateCompactKnopTekst();
+      updateWeergaveSchakelaar();
       bewaar();
 
       /*
@@ -696,8 +936,9 @@
       bewaar();
       updateTotaal();
       updateKnopTekst();
-      updateCompactKnopTekst();
+      updateWeergaveSchakelaar();
       renderBestellijst();
+      window.scrollTo(0, 0);
     }
 
     /*
@@ -710,7 +951,12 @@
 
     compactKnop.addEventListener(
       "click",
-      toggleCompacteModus
+      () => zetCompacteModus(true)
+    );
+
+    volledigKnop.addEventListener(
+      "click",
+      () => zetCompacteModus(false)
     );
 
     resetKnop.addEventListener(
@@ -725,7 +971,7 @@
     laad();
     updateTotaal();
     updateKnopTekst();
-    updateCompactKnopTekst();
+    updateWeergaveSchakelaar();
     renderBestellijst();
   </script>
 </body>

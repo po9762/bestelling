@@ -7,7 +7,7 @@
  * - Na een update op GitHub zie je de nieuwe versie dus bij de
  *   tweede keer openen.
  */
-const CACHE_NAAM = "de-leste-v5";
+const CACHE_NAAM = "de-leste-v6";
 
 const BESTANDEN = [
   "./",

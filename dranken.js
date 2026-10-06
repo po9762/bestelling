@@ -13,16 +13,16 @@ const drankData = [
       { "id": "la-chouffe", "naam": "La Chouffe" },
       { "id": "omer", "naam": "Omer", "verborgenInCompact": true },
       { "id": "tripel-karmeliet", "naam": "Tripel Karmeliet", "verborgenInCompact": true },
-      { "id": "vedett", "naam": "Vedett", "verborgenInCompact": true },
+      { "id": "vedett", "naam": "Vedett" },
       { "id": "cristal-0-0", "naam": "Cristal 0/0" },
-      { "id": "affligem-0-0", "naam": "Affligem 0/0", "verborgenInCompact": true }
+      { "id": "affligem-0-0", "naam": "Affligem 0/0" }
     ]
   },
   {
     "id": "frisdranken",
     "naam": "Frisdranken",
     "dranken": [
-      { "id": "agrum", "naam": "Agrum" },
+      { "id": "agrum", "naam": "Agrum", "verborgenInCompact": true },
       { "id": "appelsap", "naam": "Appelsap", "verborgenInCompact": true },
       { "id": "aquarius-orange", "naam": "Aquarius Orange", "verborgenInCompact": true },
       { "id": "aquarius-lemon", "naam": "Aquarius Lemon", "verborgenInCompact": true },
@@ -35,7 +35,7 @@ const drankData = [
       { "id": "ice-tea", "naam": "Ice Tea" },
       { "id": "ice-tea-green", "naam": "Ice Tea Green" },
       { "id": "ice-tea-zero", "naam": "Ice Tea Zero" },
-      { "id": "tonic", "naam": "Tonic" },
+      { "id": "tonic", "naam": "Tonic", "verborgenInCompact": true },
       { "id": "water-bruis", "naam": "Water Bruis" },
       { "id": "water-plat", "naam": "Water Plat" }
     ]

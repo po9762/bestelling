@@ -1,13 +1,17 @@
 /*
  * Service worker voor De Leste.
  *
- * Strategie "stale-while-revalidate":
- * - De app opent meteen vanuit de cache (ook zonder internet).
- * - Op de achtergrond wordt de nieuwste versie opgehaald en bewaard.
- * - Na een update op GitHub zie je de nieuwe versie dus bij de
- *   tweede keer openen.
+ * Strategie "eerst netwerk":
+ * - Met internet krijg je altijd meteen de nieuwste versie van GitHub.
+ * - Zonder internet, of als het netwerk langer dan 3 seconden nodig
+ *   heeft, opent de app vanuit de cache.
+ * - Elke versie die van het netwerk komt, wordt in de cache bewaard
+ *   voor de volgende keer zonder internet.
  */
-const CACHE_NAAM = "de-leste-v6";
+const CACHE_NAAM = "de-leste-v6c";
+
+/* Hoe lang we op het netwerk wachten voor we de cache gebruiken */
+const NETWERK_WACHTTIJD = 3000;
 
 const BESTANDEN = [
   "./",
@@ -24,10 +28,13 @@ self.addEventListener("install", event => {
       /*
        * Elk bestand apart toevoegen: als er één ontbreekt,
        * worden de andere toch gecachet.
+       * cache: "no-cache" vraagt altijd aan GitHub of er iets nieuws is.
        */
       Promise.all(
         BESTANDEN.map(bestand =>
-          cache.add(bestand).catch(() => {})
+          cache
+            .add(new Request(bestand, { cache: "no-cache" }))
+            .catch(() => {})
         )
       )
     )
@@ -60,22 +67,43 @@ self.addEventListener("fetch", event => {
     return;
   }
 
-  event.respondWith(
-    caches.open(CACHE_NAAM).then(async cache => {
-      const uitCache = await cache.match(verzoek, {
-        ignoreSearch: true
-      });
-
-      const vanNetwerk = fetch(verzoek)
-        .then(antwoord => {
-          if (antwoord && antwoord.ok) {
-            cache.put(verzoek, antwoord.clone());
-          }
-          return antwoord;
-        })
-        .catch(() => uitCache);
-
-      return uitCache || vanNetwerk;
-    })
-  );
+  event.respondWith(eerstNetwerk(event, verzoek));
 });
+
+async function eerstNetwerk(event, verzoek) {
+  const cache = await caches.open(CACHE_NAAM);
+
+  /*
+   * Haal het bestand op bij GitHub. "no-cache" zorgt ervoor dat de
+   * browser niet stiekem een oude kopie uit zijn eigen geheugen geeft.
+   */
+  const vanNetwerk = fetch(verzoek, { cache: "no-cache" }).then(antwoord => {
+    if (antwoord && antwoord.ok) {
+      cache.put(verzoek, antwoord.clone());
+    }
+    return antwoord;
+  });
+
+  /* Laat de service worker blijven leven tot de cache bijgewerkt is */
+  event.waitUntil(vanNetwerk.catch(() => {}));
+
+  const wachttijd = new Promise(klaar =>
+    setTimeout(klaar, NETWERK_WACHTTIJD, null)
+  );
+
+  try {
+    /* Wie het eerst klaar is: het netwerk of de wachttijd */
+    const antwoord = await Promise.race([vanNetwerk, wachttijd]);
+
+    if (antwoord) {
+      return antwoord;
+    }
+  } catch (error) {
+    // Geen internet: we gebruiken hieronder de cache.
+  }
+
+  const uitCache = await cache.match(verzoek, { ignoreSearch: true });
+
+  /* Niets in de cache: dan toch op het netwerk blijven wachten */
+  return uitCache || vanNetwerk;
+}

@@ -594,6 +594,21 @@
      * internet opent. Werkt alleen via https (zoals GitHub Pages).
      */
     if ("serviceWorker" in navigator) {
+      /*
+       * Wordt er een nieuwe service worker actief terwijl de app
+       * open is, herlaad dan één keer, zodat je meteen de nieuwe
+       * versie ziet. De bestelling blijft bewaard.
+       */
+      const hadAlServiceWorker = Boolean(navigator.serviceWorker.controller);
+      let isAlHerladen = false;
+
+      navigator.serviceWorker.addEventListener("controllerchange", () => {
+        if (hadAlServiceWorker && !isAlHerladen) {
+          isAlHerladen = true;
+          window.location.reload();
+        }
+      });
+
       window.addEventListener("load", () => {
         navigator.serviceWorker
           .register("sw.js")

@@ -1,66 +1,1181 @@
 <!DOCTYPE html>
 <html lang="nl">
 <head>
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon-192.png">
+
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Saldo test</title>
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <!-- Altijd de lichte versie, ook als de gsm in donkere modus staat -->
+  <meta name="theme-color" content="#f6f3ee">
+  <meta name="color-scheme" content="light">
+
+  <title>De Leste</title>
+
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #f8f8f8;
-      margin: 20px;
+    /*
+     * ============================================================
+     * KLEUREN
+     * Alle kleuren staan hier op één plaats. Het palet is
+     * afgeleid van het goudgele bier-icoon.
+     * ============================================================
+     */
+    :root {
+      --achtergrond: #f6f3ee;
+      --kaart: #ffffff;
+      --tekst: #1f1a12;
+      --tekst-zacht: #9a9286;
+      --lijn: #ebe5da;
+
+      --accent: #f6b51e;          /* goudgeel van het icoon */
+      --accent-sterk: #a86b00;    /* donker goud voor tekst en randen */
+      --op-accent: #3a2600;       /* tekst op een goudgele knop */
+      --besteld: #fff3d1;         /* achtergrond van een bestelde rij */
+
+      --gevaar: #c62828;
+      --schaduw: 0 1px 3px rgba(60, 40, 0, 0.08),
+                 0 4px 12px rgba(60, 40, 0, 0.06);
     }
 
-    .blok {
-      width: min(100%, 400px);
+    /*
+     * ============================================================
+     * AFMETINGEN
+     * ============================================================
+     */
+    :root {
+      --blokbreedte: 400px;
+
+      /*
+       * Lettergrootte van de dranknamen. Pas gerust aan:
+       * de rijhoogte rekent zichzelf mee uit.
+       */
+      --naam-grootte: 21px;
+      --naam-regelhoogte: 1.2;
+
+      /*
+       * Elke rij is even hoog: genoeg voor twee regels tekst
+       * of voor een knop van 44px, wat het grootste is.
+       * Zo staan alle knoppen altijd op exact dezelfde afstand.
+       */
+      --rij-hoogte: max(
+        48px,
+        calc(var(--naam-grootte) * var(--naam-regelhoogte) * 2 + 4px)
+      );
+    }
+
+    /*
+     * ============================================================
+     * ALGEMEEN
+     * ============================================================
+     */
+    * {
       box-sizing: border-box;
-      background: #fff;
-      border-radius: 12px;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-      padding: 20px;
-      margin-bottom: 15px;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      background-color: var(--achtergrond);
+      color: var(--tekst);
+      margin: 0;
+      padding: 0 16px 24px;
+    }
+
+    .pagina {
+      width: min(100%, var(--blokbreedte));
     }
 
     h2 {
-      margin-top: 0;
-      color: #333;
+      color: var(--tekst);
+      font-size: 22px;
+      margin: 0 0 8px;
     }
 
-    iframe {
-      width: 100%;
-      height: 600px;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      background: #fff;
+    /*
+     * Algemene knopstijl.
+     * touch-action: manipulation voorkomt dubbeltik-zoom bij snel
+     * tikken, terwijl knijpen om te zoomen gewoon blijft werken.
+     */
+    button {
+      font-family: inherit;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      min-width: 44px;
+      min-height: 44px;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
     }
 
-    a {
-      color: #007bff;
+    button:active {
+      filter: brightness(0.88);
+    }
+
+    /*
+     * ============================================================
+     * KOPBALK (blijft bovenaan staan bij het scrollen)
+     * ============================================================
+     */
+    .kop {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: var(--achtergrond);
+      padding: 12px 0 10px;
+      margin-bottom: 4px;
+    }
+
+    /* Zachte overgang onder de kopbalk bij het scrollen */
+    .kop::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: -12px;
+      height: 12px;
+      background: linear-gradient(var(--achtergrond), transparent);
+      pointer-events: none;
+    }
+
+    .kop-rij {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .kop-rij + .kop-rij {
+      margin-top: 8px;
+    }
+
+    .totaal {
+      flex: 1;
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      font-size: 18px;
+      font-weight: bold;
+    }
+
+    .totaal-getal {
+      font-size: 28px;
+      color: var(--accent-sterk);
+    }
+
+    .knop-klein {
+      background: var(--kaart);
+      color: var(--tekst);
+      font-size: 16px;
+      font-weight: bold;
+      padding: 0 14px;
+      box-shadow: var(--schaduw);
+    }
+
+    /*
+     * De Saldo-knop is een link naar de kaart-app van de club,
+     * maar ziet eruit zoals de andere kleine knoppen.
+     */
+    a.knop-klein {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 44px;
+      border-radius: 10px;
+      text-decoration: none;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    #saldoKnop {
+      color: var(--accent-sterk);
+      box-shadow: inset 0 0 0 2px var(--accent-sterk);
+      background: transparent;
+    }
+
+    #saldoKnop:active {
+      filter: brightness(0.88);
+    }
+
+    #reset {
+      color: var(--gevaar);
+      box-shadow: inset 0 0 0 2px var(--gevaar);
+      background: transparent;
+    }
+
+    /* Grote Bon/Bestel-knop */
+    #toggleKnop {
+      flex: 1;
+      background: var(--accent);
+      color: var(--op-accent);
+      font-size: 18px;
+      font-weight: bold;
+      min-height: 48px;
+      box-shadow: var(--schaduw);
+    }
+
+    /*
+     * Schakelaar met twee delen: [Compact | Volledig].
+     * Het actieve deel is wit (of donker in donkere modus).
+     */
+    .segment {
+      flex: 1;
+      display: flex;
+      background: var(--lijn);
+      border-radius: 12px;
+      padding: 3px;
+      min-height: 48px;
+    }
+
+    .segment button {
+      flex: 1;
+      min-height: 42px;
+      background: transparent;
+      color: var(--tekst-zacht);
+      font-size: 16px;
+      font-weight: bold;
+      border-radius: 9px;
+      padding: 0 6px;
+    }
+
+    .segment button[aria-pressed="true"] {
+      background: var(--kaart);
+      color: var(--tekst);
+      box-shadow: var(--schaduw);
+    }
+
+    /*
+     * ============================================================
+     * DRANKBLOKKEN
+     * ============================================================
+     */
+    .drank-blok {
+      background: var(--kaart);
+      border-radius: 14px;
+      box-shadow: var(--schaduw);
+      padding: 16px 16px 12px;
+      margin-bottom: 16px;
+    }
+
+    .drank {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      height: var(--rij-hoogte);
+      margin: 4px -8px;
+      padding: 0 8px;
+      border-radius: 10px;
+      transition: background-color 0.15s;
+    }
+
+    /* Rij waarvan al iets besteld is: goudgele achtergrond */
+    .drank.besteld {
+      background: var(--besteld);
+    }
+
+    /*
+     * Lange namen lopen door op een tweede regel. Wat daarna nog
+     * niet past, wordt afgekapt met "…", zodat een rij nooit hoger
+     * wordt dan de andere.
+     */
+    .drank-naam {
+      flex: 1;
+      min-width: 0;
+      font-size: var(--naam-grootte);
+      line-height: var(--naam-regelhoogte);
+      overflow-wrap: anywhere;
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+      overflow: hidden;
+    }
+
+    .drank.besteld .drank-naam {
+      font-weight: bold;
+    }
+
+    /*
+     * De knoppen krijgen altijd dezelfde breedte en krimpen nooit,
+     * hoe lang de dranknaam ook is.
+     */
+    .bediening {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .bediening button {
+      width: 44px;
+      height: 44px;
+      padding: 0;
+      font-size: 26px;
+      line-height: 1;
+    }
+
+    /* Plusknop: gevuld, want die gebruik je het meest */
+    .plus-knop {
+      background: var(--accent);
+      color: var(--op-accent);
+    }
+
+    /* Minknop: rustiger, alleen een rand */
+    .min-knop {
+      background: transparent;
+      color: var(--accent-sterk);
+      box-shadow: inset 0 0 0 2px var(--accent-sterk);
+    }
+
+    /* Minknop vervaagt zolang er niets te verminderen valt */
+    .drank:not(.besteld) .min-knop {
+      opacity: 0.3;
+    }
+
+    .aantal {
+      flex-shrink: 0;
+      width: 36px;
+      text-align: center;
+      font-weight: bold;
+      font-size: 22px;
+      color: var(--tekst-zacht);
+    }
+
+    .drank.besteld .aantal {
+      color: var(--accent-sterk);
+    }
+
+    /*
+     * ============================================================
+     * BON
+     * ============================================================
+     */
+    .bon-rij {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--lijn);
+      font-size: var(--naam-grootte);
+    }
+
+    .bon-aantal {
+      min-width: 40px;
+      text-align: right;
+      font-weight: bold;
+      font-size: 22px;
+    }
+
+    .bon-totaal {
+      border-bottom: none;
+      border-top: 2px solid var(--tekst);
+      margin-top: -1px;
+      font-weight: bold;
+    }
+
+    .bon-totaal .bon-aantal {
+      color: var(--accent-sterk);
+      font-size: 26px;
+    }
+
+    .lege-bon {
+      color: var(--tekst-zacht);
+      font-style: italic;
+      margin: 4px 0 8px;
+    }
+
+    /*
+     * Hover-effect alleen op toestellen met een muis,
+     * zodat het op een touchscreen niet blijft "plakken".
+     */
+    @media (hover: hover) {
+      button:hover {
+        filter: brightness(0.94);
+      }
     }
   </style>
 </head>
+
 <body>
-  <div class="blok">
-    <h2>Iframe-test</h2>
-    <p>
-      Zie je hieronder de Yanbo-pagina (en kan je inloggen)?
-      Dan werkt insluiten. Zie je een lege, grijze of foutpagina
-      ("weigerde verbinding", "kan niet worden weergegeven")?
-      Dan blokkeert Yanbo het.
-    </p>
-    <p>
-      Ter vergelijking:
-      <a href="https://pos.yanboproducts.eu" target="_blank" rel="noopener">
-        open de site gewoon in een nieuw tabblad
-      </a>.
-    </p>
+  <div class="pagina">
+    <header class="kop">
+      <div class="kop-rij">
+        <div class="totaal">
+          Totaal
+          <span id="totaalAantal" class="totaal-getal">0</span>
+        </div>
+
+        <button
+          id="installKnop"
+          class="knop-klein"
+          type="button"
+          hidden
+        >
+          Installeer
+        </button>
+
+        <!-- Opent de kaart-app van de club om het saldo te bekijken -->
+        <a
+          id="saldoKnop"
+          class="knop-klein"
+          href="https://pos.yanboproducts.eu"
+          target="_blank"
+          rel="noopener"
+        >
+          Saldo
+        </a>
+
+        <button
+          id="reset"
+          class="knop-klein"
+          type="button"
+        >
+          Reset
+        </button>
+      </div>
+
+      <div class="kop-rij">
+        <button id="toggleKnop" type="button">
+          Bon
+        </button>
+
+        <div class="segment" role="group" aria-label="Weergave">
+          <button id="compactKnop" type="button" aria-pressed="true">
+            Compact
+          </button>
+
+          <button id="volledigKnop" type="button" aria-pressed="false">
+            Volledig
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <div id="drankenContainer"></div>
   </div>
 
-  <div class="blok">
-    <iframe
-      src="https://pos.yanboproducts.eu"
-      title="Mijn Kaart"
-    ></iframe>
-  </div>
+  <script src="dranken.js"></script>
+
+  <script>
+    /*
+     * Sleutel waaronder de bestelling in het geheugen
+     * van de browser bewaard wordt.
+     */
+    const OPSLAG_SLEUTEL = "de-leste-bestelling";
+
+    /*
+     * Hier worden de aantallen van alle dranken bewaard.
+     */
+    const aantallen = {};
+
+    /*
+     * false = bestellijst
+     * true = bon
+     */
+    let bonModus = false;
+
+    /*
+     * false = alle dranken tonen
+     * true = compacte drankenlijst tonen
+     */
+    let compacteModus = true;
+
+    const container =
+      document.getElementById("drankenContainer");
+
+    const toggleKnop =
+      document.getElementById("toggleKnop");
+
+    const compactKnop =
+      document.getElementById("compactKnop");
+
+    const volledigKnop =
+      document.getElementById("volledigKnop");
+
+    const resetKnop =
+      document.getElementById("reset");
+
+    const installKnop =
+      document.getElementById("installKnop");
+
+    const totaalAantal =
+      document.getElementById("totaalAantal");
+
+    /*
+     * Bewaar de bestelling en de compacte modus, zodat niets
+     * verloren gaat bij herladen of wanneer de telefoon de app
+     * op de achtergrond afsluit.
+     */
+    function bewaar() {
+      try {
+        localStorage.setItem(
+          OPSLAG_SLEUTEL,
+          JSON.stringify({ aantallen, compacteModus })
+        );
+      } catch (error) {
+        // Opslag niet beschikbaar (bv. privévenster): app werkt verder.
+      }
+    }
+
+    /*
+     * Laad een eerder bewaarde bestelling.
+     * Alleen dranken die nog in dranken.js staan worden overgenomen,
+     * zodat een aangepaste drankenlijst niets kapotmaakt.
+     */
+    function laad() {
+      try {
+        const tekst = localStorage.getItem(OPSLAG_SLEUTEL);
+
+        if (!tekst) {
+          return;
+        }
+
+        const opgeslagen = JSON.parse(tekst);
+
+        if (opgeslagen.aantallen) {
+          Object.keys(aantallen).forEach(id => {
+            const waarde = Number(opgeslagen.aantallen[id]);
+
+            if (Number.isInteger(waarde) && waarde > 0) {
+              aantallen[id] = waarde;
+            }
+          });
+        }
+
+        if (typeof opgeslagen.compacteModus === "boolean") {
+          compacteModus = opgeslagen.compacteModus;
+        }
+      } catch (error) {
+        // Beschadigde of onleesbare opslag: begin met een lege bestelling.
+      }
+    }
+
+    /*
+     * PWA-installatie:
+     * - Verberg de knop wanneer de pagina al als geïnstalleerde app draait.
+     * - Android/Chrome: gebruik de native installatieprompt.
+     * - iPhone/iPad: Safari kan installatie niet via JavaScript starten,
+     *   dus toon de stappen om de pagina via Delen aan het beginscherm toe te voegen.
+     */
+    let uitgesteldeInstallatiePrompt = null;
+
+    const standaloneQuery =
+      window.matchMedia("(display-mode: standalone)");
+
+    function draaitAlsGeinstalleerdeApp() {
+      return (
+        standaloneQuery.matches ||
+        window.navigator.standalone === true
+      );
+    }
+
+    function updateInstallKnop() {
+      installKnop.hidden = draaitAlsGeinstalleerdeApp();
+    }
+
+    window.addEventListener("beforeinstallprompt", event => {
+      event.preventDefault();
+      uitgesteldeInstallatiePrompt = event;
+      updateInstallKnop();
+    });
+
+    window.addEventListener("appinstalled", () => {
+      uitgesteldeInstallatiePrompt = null;
+      updateInstallKnop();
+    });
+
+    installKnop.addEventListener("click", async () => {
+      if (uitgesteldeInstallatiePrompt) {
+        uitgesteldeInstallatiePrompt.prompt();
+
+        try {
+          await uitgesteldeInstallatiePrompt.userChoice;
+        } catch (error) {
+          // De gebruiker kan de installatieprompt sluiten; dat is geen fout.
+        }
+
+        uitgesteldeInstallatiePrompt = null;
+        updateInstallKnop();
+        return;
+      }
+
+      const isAppleMobile =
+        /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+        (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+
+      if (isAppleMobile) {
+        alert(
+          "Op iPhone/iPad: tik op de knop 'Delen' in Safari en kies 'Zet op beginscherm'."
+        );
+      } else {
+        alert(
+          "Gebruik het installatie- of deelmenu van je browser om deze pagina aan het beginscherm toe te voegen."
+        );
+      }
+    });
+
+    if (standaloneQuery.addEventListener) {
+      standaloneQuery.addEventListener("change", updateInstallKnop);
+    }
+
+    window.addEventListener("pageshow", updateInstallKnop);
+    updateInstallKnop();
+
+    /*
+     * Service worker registreren, zodat de app ook zonder
+     * internet opent. Werkt alleen via https (zoals GitHub Pages).
+     */
+    const SCHERM_SLEUTEL = "de-leste-scherm";
+    let isAlHerladen = false;
+
+    /*
+     * Herlaad naar de nieuwe versie. De bestelling staat al in
+     * localStorage; hier onthouden we ook of de bon open stond
+     * en hoe ver er gescrold was, zodat je op dezelfde plek terugkomt.
+     */
+    function herlaadNaarNieuweVersie() {
+      if (isAlHerladen) {
+        return;
+      }
+
+      isAlHerladen = true;
+
+      try {
+        sessionStorage.setItem(
+          SCHERM_SLEUTEL,
+          JSON.stringify({ bonModus, scrollY: window.scrollY })
+        );
+      } catch (error) {
+        // Geen opslag: dan start de app gewoon bovenaan de bestellijst.
+      }
+
+      window.location.reload();
+    }
+
+    if ("serviceWorker" in navigator) {
+      /*
+       * Wordt er een nieuwe service worker actief terwijl de app
+       * open is, herlaad dan één keer, zodat je meteen de nieuwe
+       * versie ziet.
+       */
+      const hadAlServiceWorker = Boolean(navigator.serviceWorker.controller);
+
+      navigator.serviceWorker.addEventListener("controllerchange", () => {
+        if (hadAlServiceWorker) {
+          herlaadNaarNieuweVersie();
+        }
+      });
+
+      window.addEventListener("load", () => {
+        navigator.serviceWorker
+          .register("sw.js")
+          .catch(() => {
+            // Geen service worker (bv. lokaal geopend bestand): app werkt online verder.
+          });
+      });
+    }
+
+    /*
+     * ============================================================
+     * NIEUWE VERSIE ZOEKEN BIJ TERUGKEREN NAAR DE APP
+     *
+     * Een iPhone (en soms Android) start de app niet opnieuw op als
+     * je vanuit een andere app terugkeert: hij toont gewoon wat er
+     * al stond. Daarom kijken we bij elke terugkeer zelf of er op
+     * GitHub een nieuwe versie van de app of de drankenlijst staat.
+     * ============================================================
+     */
+    const TE_CONTROLEREN = ["index.html", "dranken.js"];
+
+    /* Niet vaker dan eens per 30 seconden op GitHub kijken */
+    const MINIMALE_TUSSENTIJD = 30 * 1000;
+
+    /* De inhoud van de bestanden waarmee de app nu draait */
+    let huidigeVersie = null;
+    let laatsteControle = 0;
+
+    /*
+     * Lees de bestanden in en plak ze aan elkaar tot één tekst.
+     * Geeft null als het niet lukt (bv. geen internet).
+     */
+    async function leesVersie(bron) {
+      try {
+        const teksten = await Promise.all(
+          TE_CONTROLEREN.map(async bestand => {
+            const antwoord = bron === "cache"
+              ? await caches.match(bestand, { ignoreSearch: true })
+              : await fetch(bestand, { cache: "no-store" });
+
+            if (!antwoord || !antwoord.ok) {
+              throw new Error("niet gevonden");
+            }
+
+            return antwoord.text();
+          })
+        );
+
+        return teksten.join("\n");
+      } catch (error) {
+        return null;
+      }
+    }
+
+    /*
+     * Bij het opstarten: onthoud met welke versie de app draait.
+     * Lukt het netwerk niet (app geopend zonder internet), dan is
+     * de versie uit de cache degene die nu draait.
+     */
+    async function onthoudHuidigeVersie() {
+      huidigeVersie = await leesVersie("netwerk");
+
+      if (huidigeVersie === null && "caches" in window) {
+        huidigeVersie = await leesVersie("cache");
+      }
+
+      laatsteControle = Date.now();
+    }
+
+    async function zoekNieuweVersie() {
+      if (Date.now() - laatsteControle < MINIMALE_TUSSENTIJD) {
+        return;
+      }
+
+      laatsteControle = Date.now();
+
+      /* Laat de browser ook meteen kijken of sw.js veranderd is */
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker.getRegistration()
+          .then(registratie => registratie && registratie.update())
+          .catch(() => {});
+      }
+
+      const nieuwsteVersie = await leesVersie("netwerk");
+
+      if (nieuwsteVersie === null) {
+        return; // Geen internet: gewoon verder met wat er staat.
+      }
+
+      if (huidigeVersie === null) {
+        huidigeVersie = nieuwsteVersie;
+        return;
+      }
+
+      if (nieuwsteVersie !== huidigeVersie) {
+        herlaadNaarNieuweVersie();
+      }
+    }
+
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") {
+        zoekNieuweVersie();
+      }
+    });
+
+    /*
+     * Na een automatische herlaadbeurt: zet de bon en de
+     * scrollpositie terug zoals ze waren.
+     */
+    function herstelScherm() {
+      try {
+        const tekst = sessionStorage.getItem(SCHERM_SLEUTEL);
+        sessionStorage.removeItem(SCHERM_SLEUTEL);
+
+        if (!tekst) {
+          return;
+        }
+
+        const scherm = JSON.parse(tekst);
+
+        if (scherm.bonModus === true) {
+          bonModus = true;
+          updateKnopTekst();
+          renderBon();
+        }
+
+        if (typeof scherm.scrollY === "number") {
+          window.scrollTo(0, scherm.scrollY);
+        }
+      } catch (error) {
+        // Niets te herstellen.
+      }
+    }
+
+    /*
+     * Beheer de tekst van de Bon-knop op één plaats.
+     */
+    function updateKnopTekst() {
+      toggleKnop.textContent = bonModus
+        ? "Bestel"
+        : "Bon";
+    }
+
+    /*
+     * Toon in de schakelaar welke weergave actief is.
+     */
+    function updateWeergaveSchakelaar() {
+      compactKnop.setAttribute(
+        "aria-pressed",
+        String(compacteModus)
+      );
+
+      volledigKnop.setAttribute(
+        "aria-pressed",
+        String(!compacteModus)
+      );
+    }
+
+    /*
+     * Maak voor iedere drank een beginwaarde van nul.
+     */
+    function initialiseerAantallen() {
+      drankData.forEach(categorie => {
+        categorie.dranken.forEach(drank => {
+          aantallen[drank.id] = 0;
+        });
+      });
+    }
+
+    /*
+     * Controleer of een drank zichtbaar moet zijn.
+     *
+     * In compacte modus worden dranken met
+     * verborgenInCompact: true niet getoond,
+     * BEHALVE als er al iets van besteld is.
+     * Zo verdwijnt een bestelde drank nooit uit beeld.
+     */
+    function isDrankZichtbaar(drank) {
+      return (
+        !compacteModus ||
+        drank.verborgenInCompact !== true ||
+        aantallen[drank.id] > 0
+      );
+    }
+
+    /*
+     * Bouw de bestellijst op.
+     */
+    function renderBestellijst() {
+      container.innerHTML = "";
+
+      drankData.forEach(categorie => {
+        const zichtbareDranken =
+          categorie.dranken.filter(isDrankZichtbaar);
+
+        /*
+         * Toon geen leeg categorieblok.
+         */
+        if (zichtbareDranken.length === 0) {
+          return;
+        }
+
+        const blok = document.createElement("div");
+        blok.className = "drank-blok";
+        blok.id = categorie.id;
+
+        const titel = document.createElement("h2");
+        titel.textContent = categorie.naam;
+
+        blok.appendChild(titel);
+
+        zichtbareDranken.forEach(drank => {
+          const rij = document.createElement("div");
+          rij.className = "drank";
+          rij.id = "rij-" + drank.id;
+
+          const naam = document.createElement("span");
+          naam.className = "drank-naam";
+          naam.textContent = drank.naam;
+
+          const bediening =
+            document.createElement("div");
+
+          bediening.className = "bediening";
+
+          const minKnop =
+            document.createElement("button");
+
+          minKnop.type = "button";
+          minKnop.className = "min-knop";
+          minKnop.textContent = "−";
+
+          minKnop.setAttribute(
+            "aria-label",
+            "Verminder " + drank.naam
+          );
+
+          minKnop.addEventListener("click", () => {
+            verlaag(drank.id);
+          });
+
+          const aantal =
+            document.createElement("span");
+
+          aantal.className = "aantal";
+          aantal.id = "aantal-" + drank.id;
+
+          const plusKnop =
+            document.createElement("button");
+
+          plusKnop.type = "button";
+          plusKnop.className = "plus-knop";
+          plusKnop.textContent = "+";
+
+          plusKnop.setAttribute(
+            "aria-label",
+            "Verhoog " + drank.naam
+          );
+
+          plusKnop.addEventListener("click", () => {
+            verhoog(drank.id);
+          });
+
+          bediening.appendChild(minKnop);
+          bediening.appendChild(aantal);
+          bediening.appendChild(plusKnop);
+
+          rij.appendChild(naam);
+          rij.appendChild(bediening);
+
+          blok.appendChild(rij);
+        });
+
+        container.appendChild(blok);
+      });
+
+      drankData.forEach(categorie => {
+        categorie.dranken.forEach(drank => {
+          updateAantalOpScherm(drank.id);
+        });
+      });
+    }
+
+    /*
+     * Maak een rij voor de bon.
+     */
+    function maakBonRij(tekst, aantal, extraKlasse) {
+      const rij = document.createElement("div");
+      rij.className = "bon-rij" + (extraKlasse ? " " + extraKlasse : "");
+
+      const naam = document.createElement("span");
+      naam.textContent = tekst;
+
+      const aantalElement =
+        document.createElement("span");
+
+      aantalElement.className = "bon-aantal";
+      aantalElement.textContent = aantal;
+
+      rij.appendChild(naam);
+      rij.appendChild(aantalElement);
+
+      return rij;
+    }
+
+    /*
+     * Toon alle bestelde dranken in één blok,
+     * met een titel en onderaan het totaal.
+     *
+     * Compacte modus heeft geen invloed op de bon.
+     */
+    function renderBon() {
+      container.innerHTML = "";
+
+      const bonBlok = document.createElement("div");
+      bonBlok.className = "drank-blok";
+
+      const titel = document.createElement("h2");
+      titel.textContent = "Bon";
+      bonBlok.appendChild(titel);
+
+      let heeftDranken = false;
+
+      drankData.forEach(categorie => {
+        categorie.dranken.forEach(drank => {
+          const aantal = aantallen[drank.id];
+
+          if (aantal > 0) {
+            heeftDranken = true;
+            bonBlok.appendChild(maakBonRij(drank.naam, aantal));
+          }
+        });
+      });
+
+      if (heeftDranken) {
+        bonBlok.appendChild(
+          maakBonRij("Totaal", berekenTotaal(), "bon-totaal")
+        );
+      } else {
+        const melding = document.createElement("p");
+        melding.className = "lege-bon";
+
+        melding.textContent =
+          "Er zijn nog geen dranken geselecteerd.";
+
+        bonBlok.appendChild(melding);
+      }
+
+      container.appendChild(bonBlok);
+    }
+
+    /*
+     * Verhoog een drank met één.
+     */
+    function verhoog(id) {
+      aantallen[id] += 1;
+
+      updateTotaal();
+      updateAantalOpScherm(id);
+      bewaar();
+    }
+
+    /*
+     * Verlaag een drank met één, maar nooit onder nul.
+     */
+    function verlaag(id) {
+      if (aantallen[id] > 0) {
+        aantallen[id] -= 1;
+      }
+
+      updateTotaal();
+      updateAantalOpScherm(id);
+      bewaar();
+    }
+
+    /*
+     * Werk het zichtbare aantal van één drank bij,
+     * en kleur de rij als er iets besteld is.
+     */
+    function updateAantalOpScherm(id) {
+      const element =
+        document.getElementById("aantal-" + id);
+
+      if (element) {
+        element.textContent = aantallen[id];
+      }
+
+      const rij =
+        document.getElementById("rij-" + id);
+
+      if (rij) {
+        rij.classList.toggle("besteld", aantallen[id] > 0);
+      }
+    }
+
+    /*
+     * Bereken het totale aantal drankjes.
+     */
+    function berekenTotaal() {
+      return Object.values(aantallen).reduce(
+        (som, aantal) => som + aantal,
+        0
+      );
+    }
+
+    function updateTotaal() {
+      totaalAantal.textContent = berekenTotaal();
+    }
+
+    /*
+     * Wissel tussen de bestellijst en de bon.
+     * Daarna terug naar boven, zodat de lijst bovenaan begint.
+     */
+    function toggleWeergave() {
+      bonModus = !bonModus;
+
+      updateKnopTekst();
+
+      if (bonModus) {
+        renderBon();
+      } else {
+        renderBestellijst();
+      }
+
+      window.scrollTo(0, 0);
+    }
+
+    /*
+     * Kies compacte (true) of volledige (false) weergave.
+     */
+    function zetCompacteModus(waarde) {
+      compacteModus = waarde;
+
+      updateWeergaveSchakelaar();
+      bewaar();
+
+      /*
+       * Als de bon zichtbaar is, blijft deze ongewijzigd.
+       * De compacte instelling wordt gebruikt wanneer de
+       * gebruiker terugkeert naar de bestellijst.
+       */
+      if (!bonModus) {
+        renderBestellijst();
+      }
+    }
+
+    /*
+     * Zet alle aantallen terug op nul, na bevestiging.
+     * De gekozen compacte modus blijft behouden.
+     */
+    function resetAlles() {
+      if (
+        berekenTotaal() > 0 &&
+        !confirm("Hele bestelling wissen?")
+      ) {
+        return;
+      }
+
+      Object.keys(aantallen).forEach(id => {
+        aantallen[id] = 0;
+      });
+
+      bonModus = false;
+
+      bewaar();
+      updateTotaal();
+      updateKnopTekst();
+      updateWeergaveSchakelaar();
+      renderBestellijst();
+      window.scrollTo(0, 0);
+    }
+
+    /*
+     * Koppel de knoppen aan de functies.
+     */
+    toggleKnop.addEventListener(
+      "click",
+      toggleWeergave
+    );
+
+    compactKnop.addEventListener(
+      "click",
+      () => zetCompacteModus(true)
+    );
+
+    volledigKnop.addEventListener(
+      "click",
+      () => zetCompacteModus(false)
+    );
+
+    resetKnop.addEventListener(
+      "click",
+      resetAlles
+    );
+
+    /*
+     * Start de toepassing.
+     */
+    initialiseerAantallen();
+    laad();
+    updateTotaal();
+    updateKnopTekst();
+    updateWeergaveSchakelaar();
+    renderBestellijst();
+    herstelScherm();
+    onthoudHuidigeVersie();
+  </script>
 </body>
 </html>

@@ -593,19 +593,44 @@
      * Service worker registreren, zodat de app ook zonder
      * internet opent. Werkt alleen via https (zoals GitHub Pages).
      */
+    const SCHERM_SLEUTEL = "de-leste-scherm";
+    let isAlHerladen = false;
+
+    /*
+     * Herlaad naar de nieuwe versie. De bestelling staat al in
+     * localStorage; hier onthouden we ook of de bon open stond
+     * en hoe ver er gescrold was, zodat je op dezelfde plek terugkomt.
+     */
+    function herlaadNaarNieuweVersie() {
+      if (isAlHerladen) {
+        return;
+      }
+
+      isAlHerladen = true;
+
+      try {
+        sessionStorage.setItem(
+          SCHERM_SLEUTEL,
+          JSON.stringify({ bonModus, scrollY: window.scrollY })
+        );
+      } catch (error) {
+        // Geen opslag: dan start de app gewoon bovenaan de bestellijst.
+      }
+
+      window.location.reload();
+    }
+
     if ("serviceWorker" in navigator) {
       /*
        * Wordt er een nieuwe service worker actief terwijl de app
        * open is, herlaad dan één keer, zodat je meteen de nieuwe
-       * versie ziet. De bestelling blijft bewaard.
+       * versie ziet.
        */
       const hadAlServiceWorker = Boolean(navigator.serviceWorker.controller);
-      let isAlHerladen = false;
 
       navigator.serviceWorker.addEventListener("controllerchange", () => {
-        if (hadAlServiceWorker && !isAlHerladen) {
-          isAlHerladen = true;
-          window.location.reload();
+        if (hadAlServiceWorker) {
+          herlaadNaarNieuweVersie();
         }
       });
 
@@ -616,6 +641,131 @@
             // Geen service worker (bv. lokaal geopend bestand): app werkt online verder.
           });
       });
+    }
+
+    /*
+     * ============================================================
+     * NIEUWE VERSIE ZOEKEN BIJ TERUGKEREN NAAR DE APP
+     *
+     * Een iPhone (en soms Android) start de app niet opnieuw op als
+     * je vanuit een andere app terugkeert: hij toont gewoon wat er
+     * al stond. Daarom kijken we bij elke terugkeer zelf of er op
+     * GitHub een nieuwe versie van de app of de drankenlijst staat.
+     * ============================================================
+     */
+    const TE_CONTROLEREN = ["index.html", "dranken.js"];
+
+    /* Niet vaker dan eens per 30 seconden op GitHub kijken */
+    const MINIMALE_TUSSENTIJD = 30 * 1000;
+
+    /* De inhoud van de bestanden waarmee de app nu draait */
+    let huidigeVersie = null;
+    let laatsteControle = 0;
+
+    /*
+     * Lees de bestanden in en plak ze aan elkaar tot één tekst.
+     * Geeft null als het niet lukt (bv. geen internet).
+     */
+    async function leesVersie(bron) {
+      try {
+        const teksten = await Promise.all(
+          TE_CONTROLEREN.map(async bestand => {
+            const antwoord = bron === "cache"
+              ? await caches.match(bestand, { ignoreSearch: true })
+              : await fetch(bestand, { cache: "no-store" });
+
+            if (!antwoord || !antwoord.ok) {
+              throw new Error("niet gevonden");
+            }
+
+            return antwoord.text();
+          })
+        );
+
+        return teksten.join("\n");
+      } catch (error) {
+        return null;
+      }
+    }
+
+    /*
+     * Bij het opstarten: onthoud met welke versie de app draait.
+     * Lukt het netwerk niet (app geopend zonder internet), dan is
+     * de versie uit de cache degene die nu draait.
+     */
+    async function onthoudHuidigeVersie() {
+      huidigeVersie = await leesVersie("netwerk");
+
+      if (huidigeVersie === null && "caches" in window) {
+        huidigeVersie = await leesVersie("cache");
+      }
+
+      laatsteControle = Date.now();
+    }
+
+    async function zoekNieuweVersie() {
+      if (Date.now() - laatsteControle < MINIMALE_TUSSENTIJD) {
+        return;
+      }
+
+      laatsteControle = Date.now();
+
+      /* Laat de browser ook meteen kijken of sw.js veranderd is */
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker.getRegistration()
+          .then(registratie => registratie && registratie.update())
+          .catch(() => {});
+      }
+
+      const nieuwsteVersie = await leesVersie("netwerk");
+
+      if (nieuwsteVersie === null) {
+        return; // Geen internet: gewoon verder met wat er staat.
+      }
+
+      if (huidigeVersie === null) {
+        huidigeVersie = nieuwsteVersie;
+        return;
+      }
+
+      if (nieuwsteVersie !== huidigeVersie) {
+        herlaadNaarNieuweVersie();
+      }
+    }
+
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") {
+        zoekNieuweVersie();
+      }
+    });
+
+    /*
+     * Na een automatische herlaadbeurt: zet de bon en de
+     * scrollpositie terug zoals ze waren.
+     */
+    function herstelScherm() {
+      try {
+        const tekst = sessionStorage.getItem(SCHERM_SLEUTEL);
+        sessionStorage.removeItem(SCHERM_SLEUTEL);
+
+        if (!tekst) {
+          return;
+        }
+
+        const scherm = JSON.parse(tekst);
+
+        if (scherm.bonModus === true) {
+          bonModus = true;
+          updateKnopTekst();
+          renderBon();
+        }
+
+        if (typeof scherm.scrollY === "number") {
+          window.scrollTo(0, scherm.scrollY);
+        }
+      } catch (error) {
+        // Niets te herstellen.
+      }
     }
 
     /*
@@ -988,6 +1138,8 @@
     updateKnopTekst();
     updateWeergaveSchakelaar();
     renderBestellijst();
+    herstelScherm();
+    onthoudHuidigeVersie();
   </script>
 </body>
 </html>

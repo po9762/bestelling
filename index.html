@@ -8,7 +8,7 @@
 
   <meta
     name="viewport"
-    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    content="width=device-width, initial-scale=1.0"
   >
 
   <title>De Leste</title>
@@ -56,46 +56,68 @@
       margin-bottom: 15px;
     }
 
+    /*
+     * Algemene knopstijl.
+     * touch-action: manipulation voorkomt dubbeltik-zoom bij snel
+     * tikken, terwijl knijpen om te zoomen gewoon blijft werken.
+     */
+    button {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 22px;
+      min-width: 44px;
+      min-height: 44px;
+      padding: 6px 12px;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    button:active {
+      filter: brightness(0.85);
+    }
+
     .toggle-knop {
       flex: 1;
       box-sizing: border-box;
       background-color: #28a745;
-      color: white;
-      border: none;
       border-radius: 12px;
       padding: 12px;
-      cursor: pointer;
       font-size: 18px;
       font-weight: bold;
       box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-    }
-
-    .toggle-knop:hover {
-      background-color: #218838;
     }
 
     #compactKnop {
       background-color: #6c757d;
     }
 
-    #compactKnop:hover {
-      background-color: #5a6268;
-    }
-
     #compactKnop.actief {
       background-color: #fd7e14;
-    }
-
-    #compactKnop.actief:hover {
-      background-color: #dc6c0b;
     }
 
     #installKnop {
       background-color: #007bff;
     }
 
-    #installKnop:hover {
-      background-color: #0056b3;
+    #reset {
+      background-color: #dc3545;
+      font-size: 18px;
+    }
+
+    /*
+     * Hover-kleuren alleen op toestellen met een muis,
+     * zodat ze op een touchscreen niet blijven "plakken".
+     */
+    @media (hover: hover) {
+      button:hover { background-color: #0056b3; }
+      .toggle-knop:hover { background-color: #218838; }
+      #compactKnop:hover { background-color: #5a6268; }
+      #compactKnop.actief:hover { background-color: #dc6c0b; }
+      #installKnop:hover { background-color: #0056b3; }
+      #reset:hover { background-color: #b02a37; }
     }
 
     .drank-blok {
@@ -110,7 +132,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 15px;
+      gap: 12px;
       margin: 10px 0;
     }
 
@@ -122,36 +144,14 @@
     .bediening {
       display: flex;
       align-items: center;
-      gap: 14px;
-    }
-
-    button {
-      background-color: #007bff;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      padding: 6px 12px;
-      cursor: pointer;
-      font-size: 18px;
-    }
-
-    button:hover {
-      background-color: #0056b3;
+      gap: 10px;
     }
 
     .aantal {
-      width: 30px;
+      width: 32px;
       text-align: center;
       font-weight: bold;
       font-size: 20px;
-    }
-
-    #reset {
-      background-color: #dc3545;
-    }
-
-    #reset:hover {
-      background-color: #b02a37;
     }
 
     .bon-rij {
@@ -223,6 +223,12 @@
 
   <script>
     /*
+     * Sleutel waaronder de bestelling in het geheugen
+     * van de browser bewaard wordt.
+     */
+    const OPSLAG_SLEUTEL = "de-leste-bestelling";
+
+    /*
      * Hier worden de aantallen van alle dranken bewaard.
      */
     const aantallen = {};
@@ -258,6 +264,55 @@
       document.getElementById("totaalAantal");
 
     /*
+     * Bewaar de bestelling en de compacte modus, zodat niets
+     * verloren gaat bij herladen of wanneer de telefoon de app
+     * op de achtergrond afsluit.
+     */
+    function bewaar() {
+      try {
+        localStorage.setItem(
+          OPSLAG_SLEUTEL,
+          JSON.stringify({ aantallen, compacteModus })
+        );
+      } catch (error) {
+        // Opslag niet beschikbaar (bv. privévenster): app werkt verder.
+      }
+    }
+
+    /*
+     * Laad een eerder bewaarde bestelling.
+     * Alleen dranken die nog in dranken.js staan worden overgenomen,
+     * zodat een aangepaste drankenlijst niets kapotmaakt.
+     */
+    function laad() {
+      try {
+        const tekst = localStorage.getItem(OPSLAG_SLEUTEL);
+
+        if (!tekst) {
+          return;
+        }
+
+        const opgeslagen = JSON.parse(tekst);
+
+        if (opgeslagen.aantallen) {
+          Object.keys(aantallen).forEach(id => {
+            const waarde = Number(opgeslagen.aantallen[id]);
+
+            if (Number.isInteger(waarde) && waarde > 0) {
+              aantallen[id] = waarde;
+            }
+          });
+        }
+
+        if (typeof opgeslagen.compacteModus === "boolean") {
+          compacteModus = opgeslagen.compacteModus;
+        }
+      } catch (error) {
+        // Beschadigde of onleesbare opslag: begin met een lege bestelling.
+      }
+    }
+
+    /*
      * PWA-installatie:
      * - Verberg de knop wanneer de pagina al als geïnstalleerde app draait.
      * - Android/Chrome: gebruik de native installatieprompt.
@@ -266,9 +321,12 @@
      */
     let uitgesteldeInstallatiePrompt = null;
 
+    const standaloneQuery =
+      window.matchMedia("(display-mode: standalone)");
+
     function draaitAlsGeinstalleerdeApp() {
       return (
-        window.matchMedia("(display-mode: standalone)").matches ||
+        standaloneQuery.matches ||
         window.navigator.standalone === true
       );
     }
@@ -318,9 +376,26 @@
       }
     });
 
+    if (standaloneQuery.addEventListener) {
+      standaloneQuery.addEventListener("change", updateInstallKnop);
+    }
+
     window.addEventListener("pageshow", updateInstallKnop);
-    window.addEventListener("resize", updateInstallKnop);
     updateInstallKnop();
+
+    /*
+     * Service worker registreren, zodat de app ook zonder
+     * internet opent. Werkt alleen via https (zoals GitHub Pages).
+     */
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker
+          .register("sw.js")
+          .catch(() => {
+            // Geen service worker (bv. lokaal geopend bestand): app werkt online verder.
+          });
+      });
+    }
 
     /*
      * Beheer de tekst van de Bon-knop op één plaats.
@@ -359,14 +434,16 @@
     /*
      * Controleer of een drank zichtbaar moet zijn.
      *
-     * In compacte modus worden dranken met:
-     * verborgenInCompact: true
-     * niet getoond.
+     * In compacte modus worden dranken met
+     * verborgenInCompact: true niet getoond,
+     * BEHALVE als er al iets van besteld is.
+     * Zo verdwijnt een bestelde drank nooit uit beeld.
      */
     function isDrankZichtbaar(drank) {
-      return !(
-        compacteModus &&
-        drank.verborgenInCompact === true
+      return (
+        !compacteModus ||
+        drank.verborgenInCompact !== true ||
+        aantallen[drank.id] > 0
       );
     }
 
@@ -413,7 +490,7 @@
             document.createElement("button");
 
           minKnop.type = "button";
-          minKnop.textContent = "-";
+          minKnop.textContent = "−";
 
           minKnop.setAttribute(
             "aria-label",
@@ -522,6 +599,7 @@
 
       updateTotaal();
       updateAantalOpScherm(id);
+      bewaar();
     }
 
     /*
@@ -534,6 +612,7 @@
 
       updateTotaal();
       updateAantalOpScherm(id);
+      bewaar();
     }
 
     /*
@@ -551,13 +630,15 @@
     /*
      * Bereken het totale aantal drankjes.
      */
-    function updateTotaal() {
-      const totaal = Object.values(aantallen).reduce(
+    function berekenTotaal() {
+      return Object.values(aantallen).reduce(
         (som, aantal) => som + aantal,
         0
       );
+    }
 
-      totaalAantal.textContent = totaal;
+    function updateTotaal() {
+      totaalAantal.textContent = berekenTotaal();
     }
 
     /*
@@ -582,6 +663,7 @@
       compacteModus = !compacteModus;
 
       updateCompactKnopTekst();
+      bewaar();
 
       /*
        * Als de bon zichtbaar is, blijft deze ongewijzigd.
@@ -594,16 +676,24 @@
     }
 
     /*
-     * Zet alle aantallen terug op nul.
+     * Zet alle aantallen terug op nul, na bevestiging.
      * De gekozen compacte modus blijft behouden.
      */
     function resetAlles() {
+      if (
+        berekenTotaal() > 0 &&
+        !confirm("Hele bestelling wissen?")
+      ) {
+        return;
+      }
+
       Object.keys(aantallen).forEach(id => {
         aantallen[id] = 0;
       });
 
       bonModus = false;
 
+      bewaar();
       updateTotaal();
       updateKnopTekst();
       updateCompactKnopTekst();
@@ -632,6 +722,7 @@
      * Start de toepassing.
      */
     initialiseerAantallen();
+    laad();
     updateTotaal();
     updateKnopTekst();
     updateCompactKnopTekst();
